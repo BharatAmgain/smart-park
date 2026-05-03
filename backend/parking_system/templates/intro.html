@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>SmartPark | Smart Parking Made Easy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,500;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at 20% 30%, #0a0f2a, #02040c);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Animated gradient background */
+    .gradient-bg {
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      top: -50%;
+      left: -50%;
+      background: linear-gradient(45deg, #1e3a8a, #6b21a5, #0891b2, #1e3a8a);
+      background-size: 400% 400%;
+      animation: gradientMove 20s ease infinite;
+      z-index: -2;
+      opacity: 0.4;
+      filter: blur(60px);
+    }
+    @keyframes gradientMove {
+      0% { background-position: 0% 0%; }
+      50% { background-position: 100% 100%; }
+      100% { background-position: 0% 0%; }
+    }
+
+    /* Floating particles */
+    .particle {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: floatParticle 12s infinite alternate ease-in-out;
+    }
+    @keyframes floatParticle {
+      0% { transform: translateY(0) scale(1); opacity: 0.2; }
+      100% { transform: translateY(-50px) scale(1.5); opacity: 0.6; }
+    }
+
+    /* Floating icons (car, parking, etc.) */
+    .float-icon {
+      position: absolute;
+      font-size: 2rem;
+      color: rgba(255, 255, 255, 0.08);
+      pointer-events: none;
+      animation: floatIcon 15s infinite alternate ease-in-out;
+    }
+    @keyframes floatIcon {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      100% { transform: translate(30px, -40px) rotate(10deg); }
+    }
+
+    /* Main container */
+    .intro-container {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      animation: fadeInUp 0.9s cubic-bezier(0.2, 0.9, 0.4, 1.2) forwards;
+    }
+
+    /* Glass card with neon border */
+    .glass-card {
+      background: rgba(15, 25, 45, 0.5);
+      backdrop-filter: blur(16px);
+      border-radius: 64px;
+      padding: 2.5rem 3.5rem;
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      box-shadow: 0 30px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 255, 255, 0.1), 0 0 20px rgba(0, 255, 255, 0.2);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .glass-card:hover {
+      transform: scale(1.01);
+      box-shadow: 0 30px 50px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 255, 255, 0.3), 0 0 30px rgba(0, 255, 255, 0.3);
+    }
+
+    /* Clickable area */
+    .click-area {
+      cursor: pointer;
+      display: inline-block;
+      position: relative;
+      transition: transform 0.2s ease;
+    }
+    .click-area:hover {
+      transform: scale(1.03);
+    }
+    .click-area:active {
+      transform: scale(0.97);
+    }
+
+    /* Ripple rings */
+    .ripple-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 180px;
+      height: 180px;
+      margin-left: -90px;
+      margin-top: -90px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0);
+      pointer-events: none;
+      z-index: -1;
+    }
+    .ripple-ring::before,
+    .ripple-ring::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.5);
+      animation: rippleExpand 2s infinite ease-out;
+    }
+    .ripple-ring::after {
+      animation-delay: 0.7s;
+    }
+    @keyframes rippleExpand {
+      0% { transform: scale(0.4); opacity: 0.8; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+
+    /* Location icon */
+    .location-icon {
+      font-size: 6rem;
+      background: linear-gradient(135deg, #38bdf8, #a855f7);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 0 15px rgba(56, 189, 248, 0.7));
+      animation: pulseIcon 1.5s infinite;
+      display: block;
+      margin: 0.2rem;
+    }
+    @keyframes pulseIcon {
+      0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.5)); }
+      50% { transform: scale(1.08); filter: drop-shadow(0 0 25px rgba(56, 189, 248, 0.9)); }
+      100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.5)); }
+    }
+
+    /* Title and text */
+    .title {
+      margin-top: 1.5rem;
+      font-weight: 800;
+      font-size: 2.2rem;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, #ffffff, #a5f0ff, #c084fc);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+    .tagline {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: rgba(165, 240, 255, 0.8);
+      letter-spacing: 1px;
+    }
+    .enter-btn {
+      margin-top: 1.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+      padding: 0.8rem 2rem;
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    .enter-btn:hover {
+      transform: translateY(-3px);
+      background: linear-gradient(135deg, #3b82f6, #1e3a8a);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+    .enter-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* Fade animations */
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(40px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .fade-out {
+      animation: fadeOut 0.5s forwards !important;
+    }
+    @keyframes fadeOut {
+      to { opacity: 0; visibility: hidden; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .glass-card {
+        padding: 1.8rem 2rem;
+      }
+      .location-icon {
+        font-size: 4rem;
+      }
+      .ripple-ring {
+        width: 140px;
+        height: 140px;
+        margin-left: -70px;
+        margin-top: -70px;
+      }
+      .title {
+        font-size: 1.5rem;
+      }
+      .enter-btn {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Animated gradient background -->
+  <div class="gradient-bg"></div>
+
+  <!-- Floating particles (generated by JS) -->
+  <div id="particles"></div>
+
+  <!-- Floating icons -->
+  <i class="fas fa-parking float-icon" style="top: 10%; left: 5%; font-size: 3rem; animation-duration: 20s;"></i>
+  <i class="fas fa-car float-icon" style="bottom: 15%; right: 8%; font-size: 2.5rem; animation-duration: 18s; animation-delay: 2s;"></i>
+  <i class="fas fa-map-marker-alt float-icon" style="top: 20%; right: 12%; font-size: 2rem; animation-duration: 22s; animation-delay: 1s;"></i>
+  <i class="fas fa-clock float-icon" style="bottom: 20%; left: 10%; font-size: 2rem; animation-duration: 16s;"></i>
+
+  <div class="intro-container" id="introRoot">
+    <div class="glass-card">
+      <div class="click-area" id="clickArea">
+        <div class="ripple-ring"></div>
+        <i class="fas fa-location-dot location-icon"></i>
+      </div>
+      <div class="title">SmartPark</div>
+      <div class="tagline">Find, Reserve & Pay — Instantly</div>
+      <button class="enter-btn" id="enterBtn">
+        <i class="fas fa-arrow-right"></i> Enter Parking Map
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Generate floating particles
+    function createParticles() {
+      const container = document.getElementById('particles');
+      const particleCount = 50;
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('particle');
+        const size = Math.random() * 6 + 2;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.top = `${Math.random() * 100}%`;
+        particle.style.animationDuration = `${Math.random() * 15 + 8}s`;
+        particle.style.animationDelay = `${Math.random() * 5}s`;
+        container.appendChild(particle);
+      }
+    }
+    createParticles();
+
+    let redirecting = false;
+
+    function goToHome() {
+      if (redirecting) return;
+      redirecting = true;
+
+      const root = document.getElementById('introRoot');
+      root.classList.add('fade-out');
+
+      setTimeout(() => {
+        window.location.href = "/map/";
+      }, 500);
+    }
+
+    const clickArea = document.getElementById('clickArea');
+    const enterBtn = document.getElementById('enterBtn');
+    clickArea.addEventListener('click', goToHome);
+    clickArea.addEventListener('touchstart', goToHome);
+    enterBtn.addEventListener('click', goToHome);
+    enterBtn.addEventListener('touchstart', goToHome);
+  </script>
+</body>
+</html>

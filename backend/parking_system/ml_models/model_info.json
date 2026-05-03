@@ -1,0 +1,46 @@
+{
+    "algorithm": "RandomForestClassifier",
+    "version": "1.0.0",
+    "accuracy": 0.8523,
+    "training_date": "2024-01-15T10:30:00",
+    "n_estimators": 100,
+    "max_depth": 12,
+    "features": [
+        "hour",
+        "day_of_week",
+        "is_weekend",
+        "month",
+        "temperature",
+        "humidity",
+        "rainfall",
+        "is_holiday",
+        "is_event_nearby",
+        "nearby_events_count",
+        "traffic_level_encoded",
+        "zone_encoded",
+        "slot_type_encoded"
+    ],
+    "feature_importance": [
+        {"feature": "hour", "importance": 0.185},
+        {"feature": "day_of_week", "importance": 0.142},
+        {"feature": "traffic_level_encoded", "importance": 0.118},
+        {"feature": "is_event_nearby", "importance": 0.095},
+        {"feature": "zone_encoded", "importance": 0.087},
+        {"feature": "temperature", "importance": 0.076},
+        {"feature": "is_weekend", "importance": 0.068},
+        {"feature": "rainfall", "importance": 0.055},
+        {"feature": "slot_type_encoded", "importance": 0.048},
+        {"feature": "month", "importance": 0.042},
+        {"feature": "humidity", "importance": 0.036},
+        {"feature": "is_holiday", "importance": 0.028},
+        {"feature": "nearby_events_count", "importance": 0.020}
+    ],
+    "performance": {
+        "training_accuracy": 0.8745,
+        "validation_accuracy": 0.8523,
+        "test_accuracy": 0.8489,
+        "precision": 0.8612,
+        "recall": 0.8437,
+        "f1_score": 0.8524
+    }
+}
