@@ -32,7 +32,7 @@
         .register-link { text-align: center; margin-top: 1.2rem; color: rgba(255, 255, 255, 0.7); font-size: 0.85rem; }
         .register-link a { color: #a855f7; text-decoration: none; font-weight: 600; }
         .register-link a:hover { text-decoration: underline; color: #c084fc; }
-        .alert-message { background: rgba(231, 76, 60, 0.2); border-left: 3px solid #e74c3c; border-radius: 12px; padding: 0.5rem 1rem; margin-bottom: 1rem; font-size: 0.8rem; color: #ffb3b3; display: none; }
+        .error-message { background: rgba(231, 76, 60, 0.2); border-left: 3px solid #e74c3c; border-radius: 12px; padding: 0.5rem 1rem; margin-bottom: 1rem; font-size: 0.8rem; color: #ffb3b3; }
         @media (max-width: 480px) { .glass-card { padding: 1.5rem; } }
     </style>
 </head>
@@ -53,56 +53,18 @@
 
         <div class="divider">or</div>
 
-        <div id="errorAlert" class="alert-message"></div>
+        {% if error %}
+            <div class="error-message">{{ error }}</div>
+        {% endif %}
 
-        <form id="loginForm">
-            <div class="mb-3"><input type="text" id="username" class="form-control" placeholder="Username" required></div>
-            <div class="mb-3"><input type="password" id="password" class="form-control" placeholder="Password" required></div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3"><input type="text" name="username" class="form-control" placeholder="Username" required></div>
+            <div class="mb-3"><input type="password" name="password" class="form-control" placeholder="Password" required></div>
             <button type="submit" class="btn-primary">Sign In with Email</button>
         </form>
 
         <div class="register-link">Don't have an account? <a href="/register/">Create one now</a></div>
     </div>
-
-    <script>
-        // CSRF token helper
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-        const csrftoken = getCookie('csrftoken');
-
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('errorAlert');
-            errorDiv.style.display = 'none';
-            try {
-                const res = await fetch('/api/login/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-CSRFToken': csrftoken
-                    },
-                    credentials: 'include',
-                    body: new URLSearchParams({ username, password })
-                });
-                const data = await res.json();
-                if (data.success) window.location.href = data.redirect;
-                else { errorDiv.textContent = data.error || 'Invalid credentials.'; errorDiv.style.display = 'block'; }
-            } catch (err) { errorDiv.textContent = 'Network error.'; errorDiv.style.display = 'block'; }
-        });
-    </script>
 </body>
 </html>

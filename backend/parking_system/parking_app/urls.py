@@ -15,12 +15,12 @@ urlpatterns = [
     path('dashboard/', views.dashboard_page, name='dashboard'),
     path('admin/', views.admin_redirect, name='admin'),
 
-    # Authentication pages
-    path('register/', views.register_page, name='register'),
-    path('login/', views.login_page, name='login'),
+    # Authentication pages (standard forms – handle both GET and POST)
+    path('register/', views.register_user, name='register'),
+    path('login/', views.login_user, name='login'),
     path('logout/', views.logout_user, name='logout'),
-    path('api/register/', views.register_user, name='api_register'),
-    path('api/login/', views.login_user, name='api_login'),
+
+    # My bookings and session cancellation
     path('my-bookings/', views.my_bookings_page, name='my_bookings'),
     path('api/cancel-session/<str:session_id>/', views.CancelSessionView.as_view(), name='cancel_session'),
 
@@ -44,6 +44,9 @@ urlpatterns = [
     path('api/payment-failure/', views.PaymentFailureView.as_view(), name='payment-failure'),
     path('api/payment-verify/', csrf_exempt(views.PaymentVerifyView.as_view()), name='payment-verify'),
 
-    # Include router URLs
+    # Social authentication (allauth)
+    path('accounts/', include('allauth.urls')),
+
+    # Include DRF router URLs
     path('api/', include(router.urls)),
 ]

@@ -28,6 +28,7 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
 from django.db import connection
 
 from .models import (
@@ -154,7 +155,7 @@ def admin_redirect(request):
     return redirect('/admin/')
 
 # ============================================
-# AUTHENTICATION (with CSRF exemption)
+# AUTHENTICATION (standard Django forms)
 # ============================================
 def register_page(request):
     return render(request, 'register.html')
@@ -162,20 +163,19 @@ def register_page(request):
 def login_page(request):
     return render(request, 'login.html')
 
-@csrf_exempt
 def register_user(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        if User.objects.filter(username=username).exists():
-            return JsonResponse({'success': False, 'error': 'Username already exists'})
-        user = User.objects.create_user(username=username, email=email, password=password)
-        auth_login(request, user)
-        return JsonResponse({'success': True, 'redirect': '/map/'})
-    return JsonResponse({'success': False, 'error': 'Invalid request'})
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            auth_login(request, user)
+            return redirect('/map/')
+        else:
+            return render(request, 'register.html', {'form': form})
+    else:
+        form = UserCreationForm()
+        return render(request, 'register.html', {'form': form})
 
-@csrf_exempt
 def login_user(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -183,10 +183,11 @@ def login_user(request):
         user = authenticate(request, username=username, password=password)
         if user:
             auth_login(request, user)
-            return JsonResponse({'success': True, 'redirect': '/map/'})
+            return redirect('/map/')
         else:
-            return JsonResponse({'success': False, 'error': 'Invalid credentials'})
-    return JsonResponse({'success': False, 'error': 'Invalid request'})
+            return render(request, 'login.html', {'error': 'Invalid username or password.'})
+    else:
+        return render(request, 'login.html')
 
 def logout_user(request):
     auth_logout(request)
@@ -218,7 +219,7 @@ def verify_email_otp(email, otp):
     return False
 
 # ============================================
-# API VIEWS (unchanged from your original)
+# API VIEWS (remaining unchanged)
 # ============================================
 class APIHomeView(APIView):
     permission_classes = [AllowAny]
