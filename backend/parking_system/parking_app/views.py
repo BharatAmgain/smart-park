@@ -1,5 +1,5 @@
 """
-SmartPark – Complete Views (Fixed eSewa + Khalti + Auto Activation)
+SmartPark – Complete Views (Fixed eSewa + Khalti + Auto Activation + Standard Auth)
 """
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect
@@ -157,13 +157,9 @@ def admin_redirect(request):
 # ============================================
 # AUTHENTICATION (standard Django forms)
 # ============================================
-def register_page(request):
-    return render(request, 'register.html')
-
-def login_page(request):
-    return render(request, 'login.html')
 
 def register_user(request):
+    """Register a new user."""
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
@@ -177,11 +173,12 @@ def register_user(request):
         return render(request, 'register.html', {'form': form})
 
 def login_user(request):
+    """Log in an existing user."""
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
-        if user:
+        if user is not None:
             auth_login(request, user)
             return redirect('/map/')
         else:
@@ -219,7 +216,7 @@ def verify_email_otp(email, otp):
     return False
 
 # ============================================
-# API VIEWS (remaining unchanged)
+# API VIEWS (unchanged)
 # ============================================
 class APIHomeView(APIView):
     permission_classes = [AllowAny]
