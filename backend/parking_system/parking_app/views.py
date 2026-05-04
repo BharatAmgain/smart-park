@@ -1,7 +1,7 @@
 """
-SmartPark – Complete Views (Fixed eSewa + Khalti + Auto Activation + Custom Auth)
+SmartPark – Complete Views (Fixed Authentication + All Features)
 """
-from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.core.cache import cache
@@ -28,7 +28,6 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
-from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.db import connection
 
@@ -41,27 +40,12 @@ from .serializers import (
 )
 from django.conf import settings
 
-# ========== CUSTOM REGISTRATION FORM (includes email) ==========
-class CustomUserCreationForm(UserCreationForm):
-    email = forms.EmailField(required=True, label="Email")
-
-    class Meta:
-        model = User
-        fields = ('username', 'email', 'password1', 'password2')
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.email = self.cleaned_data['email']
-        if commit:
-            user.save()
-        return user
-
 # ========== CACHE KEY ==========
 LIVE_DATA_CACHE_KEY = 'live_parking_data'
 CACHE_TIMEOUT = 5
 
 # ============================================
-# BACKGROUND SCHEDULER (optional)
+# BACKGROUND SCHEDULER
 # ============================================
 try:
     from apscheduler.schedulers.background import BackgroundScheduler
@@ -119,7 +103,6 @@ def simulate_realtime_updates():
             print(f"Real-time error: {e}")
 
 def update_reserved_to_active():
-    """Convert reserved sessions to active when start_time <= now"""
     while True:
         time_module.sleep(10)
         try:
@@ -171,20 +154,26 @@ def admin_redirect(request):
     return redirect('/admin/')
 
 # ============================================
-# AUTHENTICATION (using custom form with email)
+# AUTHENTICATION (FIXED – USES UserCreationForm)
 # ============================================
 def register_user(request):
     if request.method == 'POST':
-        form = CustomUserCreationForm(request.POST)
+        form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            # Save email manually (UserCreationForm doesn't include email)
+            email = request.POST.get('email', '')
+            if email:
+                user.email = email
+                user.save()
             auth_login(request, user)
             return redirect('/map/')
         else:
-            print("[REGISTER] Form errors:", form.errors)
+            print("Registration errors:", form.errors)
+            # Re-render the registration page with the form (which contains errors)
             return render(request, 'register.html', {'form': form})
     else:
-        form = CustomUserCreationForm()
+        form = UserCreationForm()
         return render(request, 'register.html', {'form': form})
 
 def login_user(request):
@@ -230,7 +219,7 @@ def verify_email_otp(email, otp):
     return False
 
 # ============================================
-# API VIEWS (unchanged)
+# API VIEWS (ALL ORIGINAL FUNCTIONALITY)
 # ============================================
 class APIHomeView(APIView):
     permission_classes = [AllowAny]
@@ -697,7 +686,7 @@ class InitiatePaymentView(APIView):
             if verify_email_otp(account_id, otp_code):
                 if payment_method == 'esewa':
                     if USE_MOCK_ESEWA:
-                        # Mock fallback – not used when False
+                        # Mock fallback (not used)
                         try:
                             slot = ParkingSlot.objects.get(slot_number=slot_number)
                             if slot.status != 'available':
