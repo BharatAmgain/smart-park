@@ -1,7 +1,7 @@
 """
-SmartPark – Complete Views (Fixed eSewa + Khalti + Auto Activation + Standard Auth)
+SmartPark – Complete Views (Fixed eSewa + Khalti + Auto Activation + Custom Auth)
 """
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
 from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.core.cache import cache
@@ -28,6 +28,7 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
+from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.db import connection
 
@@ -39,6 +40,21 @@ from .serializers import (
     ParkingSessionSerializer, PaymentSerializer
 )
 from django.conf import settings
+
+# ========== CUSTOM REGISTRATION FORM (includes email) ==========
+class CustomUserCreationForm(UserCreationForm):
+    email = forms.EmailField(required=True, label="Email")
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'password1', 'password2')
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data['email']
+        if commit:
+            user.save()
+        return user
 
 # ========== CACHE KEY ==========
 LIVE_DATA_CACHE_KEY = 'live_parking_data'
@@ -155,25 +171,23 @@ def admin_redirect(request):
     return redirect('/admin/')
 
 # ============================================
-# AUTHENTICATION (standard Django forms)
+# AUTHENTICATION (using custom form with email)
 # ============================================
-
 def register_user(request):
-    """Register a new user."""
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             auth_login(request, user)
             return redirect('/map/')
         else:
+            print("[REGISTER] Form errors:", form.errors)
             return render(request, 'register.html', {'form': form})
     else:
-        form = UserCreationForm()
+        form = CustomUserCreationForm()
         return render(request, 'register.html', {'form': form})
 
 def login_user(request):
-    """Log in an existing user."""
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
