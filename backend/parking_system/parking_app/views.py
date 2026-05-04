@@ -41,7 +41,7 @@ from django.conf import settings
 
 # ========== CACHE KEY ==========
 LIVE_DATA_CACHE_KEY = 'live_parking_data'
-CACHE_TIMEOUT = 5  # seconds – faster updates
+CACHE_TIMEOUT = 5
 
 # ============================================
 # BACKGROUND SCHEDULER (optional)
@@ -104,7 +104,7 @@ def simulate_realtime_updates():
 def update_reserved_to_active():
     """Convert reserved sessions to active when start_time <= now"""
     while True:
-        time_module.sleep(10)  # Check every 10 seconds
+        time_module.sleep(10)
         try:
             now = timezone.now()
             sessions = ParkingSession.objects.filter(status='reserved', start_time__lte=now)
@@ -154,7 +154,7 @@ def admin_redirect(request):
     return redirect('/admin/')
 
 # ============================================
-# AUTHENTICATION
+# AUTHENTICATION (with CSRF exemption)
 # ============================================
 def register_page(request):
     return render(request, 'register.html')
@@ -162,6 +162,7 @@ def register_page(request):
 def login_page(request):
     return render(request, 'login.html')
 
+@csrf_exempt
 def register_user(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -174,6 +175,7 @@ def register_user(request):
         return JsonResponse({'success': True, 'redirect': '/map/'})
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
+@csrf_exempt
 def login_user(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -216,7 +218,7 @@ def verify_email_otp(email, otp):
     return False
 
 # ============================================
-# API VIEWS
+# API VIEWS (unchanged from your original)
 # ============================================
 class APIHomeView(APIView):
     permission_classes = [AllowAny]
@@ -283,7 +285,7 @@ class ParkingSessionViewSet(viewsets.ModelViewSet):
         sessions = ParkingSession.objects.filter(status='active')
         return Response(self.get_serializer(sessions, many=True).data)
 
-# ========== LIVE PARKING VIEW (Distinguishes future reserved vs active) ==========
+# ========== LIVE PARKING VIEW ==========
 class LiveParkingView(APIView):
     permission_classes = [AllowAny]
 
@@ -314,7 +316,6 @@ class LiveParkingView(APIView):
                 cache.set(LIVE_DATA_CACHE_KEY, response_data, CACHE_TIMEOUT)
                 return Response(response_data)
 
-            # Get slot IDs that have a future session (start_time > now)
             future_slot_pks = set(
                 ParkingSession.objects.filter(
                     start_time__gt=now,
@@ -331,7 +332,6 @@ class LiveParkingView(APIView):
                 slots_data = []
 
                 for slot in slots:
-                    # If there's a future session for this slot, it's reserved
                     if slot.pk in future_slot_pks:
                         effective = 'reserved'
                         reserved += 1
