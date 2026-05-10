@@ -2,412 +2,275 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartPark – Live Parking Map with eSewa & Khalti</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>SmartPark – Live Map</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; background: radial-gradient(circle at 20% 30%, #0a0f2a, #02040c); }
-        .navbar { background: rgba(15, 25, 45, 0.8); backdrop-filter: blur(16px); padding: 0.6rem 1rem; position: fixed; top: 0; width: 100%; z-index: 1001; box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.1); border-bottom: 1px solid rgba(0,255,255,0.2); }
-        .navbar-brand { color: white !important; font-size: 1.3rem; font-weight: bold; cursor: pointer; background: linear-gradient(135deg, #fff, #a5f0ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        body { font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; background: #03051a; }
+        .leaflet-routing-container { display: none !important; }
+        .navbar { background: rgba(15, 25, 45, 0.95); backdrop-filter: blur(16px); padding: 0.6rem 1rem; position: fixed; top: 0; width: 100%; z-index: 1001; border-bottom: 1px solid rgba(0,255,255,0.2); }
+        .navbar-brand { color: white !important; font-size: 1.3rem; font-weight: bold; background: linear-gradient(135deg, #fff, #a5f0ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .navbar-brand i { color: #a855f7; margin-right: 6px; }
-        .nav-link { color: rgba(255,255,255,0.9) !important; font-size: 0.9rem; cursor: pointer; transition: 0.2s; }
-        .nav-link:hover, .nav-link.active { color: #a855f7 !important; text-shadow: 0 0 5px rgba(168,85,247,0.5); }
-        #map { height: calc(100vh - 52px); width: 100%; margin-top: 52px; background: #03051a; }
-        .search-panel, .info-panel {
-            background: rgba(15, 25, 45, 0.85);
-            backdrop-filter: blur(16px);
-            border-radius: 24px;
-            border: 1px solid rgba(0, 255, 255, 0.2);
-            color: white;
-            font-size: 0.8rem;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .search-panel:hover, .info-panel:hover { box-shadow: 0 12px 30px rgba(0,0,0,0.5); border-color: rgba(0,255,255,0.4); }
-        .search-panel { position: absolute; top: 70px; left: 10px; z-index: 1000; width: 280px; padding: 1rem; }
-        .info-panel { position: absolute; top: 70px; right: 10px; z-index: 1000; width: 280px; max-height: 60vh; overflow-y: auto; padding: 1rem; scrollbar-width: thin; }
-        .search-panel h6, .info-panel h6 { font-size: 1rem; margin-bottom: 0.75rem; font-weight: 700; background: linear-gradient(135deg, #fff, #a855f7); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        .stats-row { display: flex; gap: 0.6rem; margin-bottom: 0.75rem; }
-        .stat-box { background: rgba(255,255,255,0.1); border-radius: 16px; padding: 0.5rem; text-align: center; flex: 1; transition: 0.2s; backdrop-filter: blur(4px); }
-        .stat-box:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
-        .stat-number { font-size: 1.3rem; font-weight: 800; }
-        .stat-available .stat-number { color: #2ecc71; text-shadow: 0 0 5px rgba(46,204,113,0.5); }
-        .stat-occupied .stat-number { color: #e74c3c; text-shadow: 0 0 5px rgba(231,76,60,0.5); }
-        .stat-reserved .stat-number { color: #f39c12; text-shadow: 0 0 5px rgba(243,156,18,0.5); }
-        .nearest-item {
-            background: rgba(255,255,255,0.08);
-            border-radius: 16px;
-            padding: 0.7rem;
-            margin-bottom: 0.8rem;
-            border-left: 3px solid #2ecc71;
-            cursor: pointer;
-            font-size: 0.75rem;
-            transition: 0.2s;
-        }
-        .nearest-item:hover { background: rgba(255,255,255,0.18); transform: translateX(4px); border-left-color: #a855f7; }
-        .nearest-item.highlight { border-left: 3px solid #ffeb3b; background: rgba(255,235,59,0.15); }
-        .reserve-small-btn {
-            background: linear-gradient(135deg, #a855f7, #7c3aed);
-            border: none;
-            border-radius: 30px;
-            padding: 0.3rem 0.5rem;
-            font-size: 0.7rem;
-            font-weight: 600;
-            margin-top: 0.3rem;
-            width: 100%;
-            color: white;
-            transition: 0.2s;
-        }
-        .reserve-small-btn:hover { background: linear-gradient(135deg, #c084fc, #a855f7); transform: scale(1.02); }
-        .search-result-card {
-            background: rgba(255,255,255,0.1);
-            border-radius: 16px;
-            padding: 0.7rem;
-            margin-top: 0.5rem;
-            border-left: 3px solid;
-        }
-        .search-result-card.available { border-left-color: #2ecc71; }
-        .search-result-card.occupied { border-left-color: #e74c3c; }
-        .search-result-card.reserved { border-left-color: #f39c12; }
-        .legend {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(12px);
-            border-radius: 40px;
-            padding: 0.5rem 1rem;
-            font-size: 0.75rem;
-            z-index: 1000;
-            display: flex;
-            gap: 1.2rem;
-            flex-wrap: wrap;
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            font-weight: 500;
-        }
-        .legend span { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s; padding: 0.2rem 0.5rem; border-radius: 30px; color: white; }
-        .legend span:hover { background: rgba(255,255,255,0.15); transform: scale(1.05); }
-        .legend i { font-size: 0.8rem; }
-        .location-btn {
-            position: absolute;
-            bottom: 80px;
-            right: 10px;
-            background: linear-gradient(135deg, #4361ee, #3a0ca3);
-            border: none;
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            color: white;
-            cursor: pointer;
-            z-index: 1000;
-            font-size: 1.2rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .directions-fab {
-            position: absolute;
-            bottom: 140px;
-            left: 10px;
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-            border: none;
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            color: white;
-            cursor: pointer;
-            z-index: 1000;
-            font-size: 1.2rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            display: none;
-        }
-        .location-btn:hover, .directions-fab:hover { transform: scale(1.08); }
-        .vehicle-selector {
-            position: absolute; bottom: 10px; right: 10px;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(8px);
-            border-radius: 50px;
-            padding: 0.4rem;
-            display: flex;
-            gap: 0.4rem;
-            z-index: 1000;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        .vehicle-btn {
-            background: transparent;
-            border: none;
-            color: white;
-            padding: 0.4rem 0.8rem;
-            border-radius: 40px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .vehicle-btn.active {
-            background: linear-gradient(135deg, #a855f7, #7c3aed);
-            box-shadow: 0 2px 8px rgba(168,85,247,0.4);
-        }
-        .vehicle-btn:hover:not(.active) { background: rgba(255,255,255,0.15); }
-        .search-input-group { display: flex; gap: 8px; margin-bottom: 0.8rem; }
-        .search-input-group input {
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.25);
-            color: white;
-            border-radius: 40px;
-            padding: 0.5rem 1rem;
-            font-size: 0.8rem;
-            flex: 1;
-            transition: 0.2s;
-        }
-        .search-input-group input:focus { outline: none; border-color: #a855f7; background: rgba(255,255,255,0.2); }
-        .search-input-group button {
-            background: linear-gradient(135deg, #a855f7, #7c3aed);
-            border: none;
-            border-radius: 40px;
-            padding: 0.5rem 1rem;
-            color: white;
-            font-weight: 600;
-            transition: 0.2s;
-        }
-        .search-input-group button:hover { transform: scale(0.98); }
-        .modal-content { background: #1e1b4b; color: white; border-radius: 24px; border: 1px solid rgba(0,255,255,0.2); }
-        .toast-payment {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-            color: white; border-radius: 40px; padding: 10px 20px; font-size: 0.9rem;
-            z-index: 3000; animation: slideUp 0.3s ease; font-weight: 600;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        @keyframes slideUp {
-            from { transform: translateX(-50%) translateY(100px); opacity: 0; }
-            to { transform: translateX(-50%) translateY(0); opacity: 1; }
-        }
-        .btn-find {
-            background: #0d6efd;
-            border: none;
-            border-radius: 40px;
-            padding: 0.5rem;
-            font-weight: 600;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .btn-find:hover { background: #0b5ed7; transform: scale(0.98); }
-        .btn-find i { font-size: 1rem; }
-        .nearest-item i { width: 18px; margin-right: 6px; color: #a855f7; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #1e1b4b; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: #a855f7; border-radius: 10px; }
-        .finger-icon { animation: point 0.8s infinite; }
-        @keyframes point {
-            0% { transform: translateX(0); }
-            50% { transform: translateX(5px); }
-            100% { transform: translateX(0); }
-        }
+        .nav-link { color: rgba(255,255,255,0.9) !important; font-size: 0.9rem; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { color: #a855f7 !important; }
+        #map { height: calc(100vh - 52px); width: 100%; margin-top: 52px; background: #03051a; z-index: 1; }
+
         .directions-panel {
             position: absolute;
-            bottom: 10px;
+            top: 70px;
             right: 10px;
-            width: 280px;
-            max-height: 250px;
-            overflow-y: auto;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(12px);
-            border-radius: 16px;
-            padding: 0.5rem;
             z-index: 1000;
-            font-size: 0.7rem;
-            color: white;
-            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(15, 25, 45, 0.95);
+            backdrop-filter: blur(16px);
+            border-radius: 20px;
+            padding: 15px;
+            width: 340px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
             display: none;
-        }
-        .directions-panel h6 { margin: 0 0 0.5rem 0; font-size: 0.8rem; }
-        .step-item { padding: 0.3rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .step-item:last-child { border-bottom: none; }
-        .distance-left { font-weight: bold; color: #a855f7; }
-        .close-directions {
-            float: right;
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
+            border: 1px solid rgba(0,255,255,0.2);
             font-size: 0.8rem;
+            color: white;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
         }
-        .close-directions:hover { color: #a855f7; }
+        .directions-panel .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; }
+        .directions-panel .panel-header h6 { color: #f39c12; font-size: 0.95rem; font-weight: 700; margin: 0; }
+        .directions-panel .close-panel { background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 28px; height: 28px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; font-size: 0.8rem; }
+        .directions-panel .close-panel:hover { background: rgba(231,76,60,0.6); transform: scale(1.05); }
+        .directions-panel .distance-info { background: rgba(46,204,113,0.15); padding: 10px; border-radius: 12px; margin-bottom: 12px; border-left: 3px solid #2ecc71; }
+        .directions-panel .distance-info strong { color: #2ecc71; }
+        .directions-panel .instruction { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .directions-panel .instruction .step-text { flex: 1; color: #ddd; }
+        .directions-panel .instruction .step-distance { color: #a855f7; font-weight: 500; min-width: 55px; text-align: right; font-family: monospace; }
+
+        .location-btn { position: absolute; bottom: 90px; right: 20px; z-index: 1000; background: linear-gradient(135deg, #4361ee, #3a0ca3); border: none; border-radius: 50%; width: 50px; height: 50px; color: white; cursor: pointer; font-size: 1.3rem; box-shadow: 0 4px 15px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .location-btn:hover { transform: scale(1.08); }
+        .directions-btn { position: absolute; bottom: 150px; right: 20px; z-index: 1000; background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; border-radius: 50%; width: 50px; height: 50px; color: white; cursor: pointer; font-size: 1.3rem; box-shadow: 0 4px 15px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+
+        .toast-notification { position: fixed; bottom: 20px; left: 20px; background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); border-radius: 12px; padding: 12px 20px; color: white; z-index: 10000; border-left: 4px solid; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .modal-content { background: #1e1b4b; color: white; border-radius: 28px; border: 1px solid rgba(0,255,255,0.3); overflow: hidden; }
+        .modal-header { background: rgba(15, 25, 45, 0.8); border-bottom: 1px solid rgba(0,255,255,0.2); padding: 1.2rem 1.5rem; }
+        .modal-header h5 { font-size: 1.3rem; font-weight: 700; color: white; }
+        .modal-body { padding: 1.5rem; background: #1e1b4b; }
+        .modal-footer { background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05); padding: 1rem 1.5rem; }
+
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600; color: #a855f7; letter-spacing: 0.5px; }
+        .form-control, .form-select {
+            background: rgba(30, 27, 75, 0.8);
+            border: 1px solid rgba(0,255,255,0.2);
+            border-radius: 16px;
+            padding: 0.85rem 1.2rem;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        .form-control:focus, .form-select:focus { background: #2a2555; border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168,85,247,0.2); color: white; outline: none; }
+        .form-control[readonly] { background: rgba(30, 27, 75, 0.6); color: rgba(255,255,255,0.9); cursor: default; }
+
+        .price-display {
+            background: rgba(46,204,113,0.1);
+            border-radius: 20px;
+            padding: 1rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .price-display .price-label { font-size: 0.8rem; color: rgba(255,255,255,0.6); letter-spacing: 1px; }
+        .price-display .price-value { font-size: 2.2rem; font-weight: 800; color: #2ecc71; line-height: 1.2; }
+        .price-display .price-unit { font-size: 0.9rem; color: rgba(255,255,255,0.5); margin-left: 4px; }
+
+        .pricing-info {
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 0.8rem 1rem;
+            margin: 1rem 0;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.7);
+            border-left: 3px solid #f39c12;
+        }
+        .pricing-info i { color: #f39c12; margin-right: 6px; }
+
+        .payment-option-group { display: flex; gap: 1rem; margin-top: 0.5rem; }
         .payment-option-btn {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 30px;
-            padding: 0.5rem;
-            margin: 0.3rem;
-            cursor: pointer;
-            transition: 0.2s;
-            color: white;
-        }
-        .payment-option-btn.selected {
-            background: linear-gradient(135deg, #a855f7, #7c3aed);
-            border-color: #a855f7;
-        }
-        .payment-option-btn:hover {
-            background: rgba(168,85,247,0.3);
-        }
-        .otp-input-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-top: 10px;
-        }
-        .otp-input-group input {
-            flex: 2;
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.25);
-            color: white;
+            background: rgba(30, 27, 75, 0.8);
+            border: 1px solid rgba(0,255,255,0.2);
             border-radius: 40px;
-            padding: 0.5rem 1rem;
-        }
-        .otp-input-group button {
+            padding: 0.7rem 1.2rem;
             flex: 1;
-            background: linear-gradient(135deg, #a855f7, #7c3aed);
-            border: none;
-            border-radius: 40px;
-            padding: 0.5rem;
-            color: white;
-            font-weight: 600;
-        }
-        .resend-otp {
-            margin-top: 0.5rem;
-            font-size: 0.7rem;
-            text-align: right;
             cursor: pointer;
-            color: #a855f7;
+            text-align: center;
+            transition: all 0.2s;
+            font-weight: 500;
+            color: white;
         }
-        .resend-otp:hover { text-decoration: underline; }
+        .payment-option-btn i { margin-right: 8px; }
+        .payment-option-btn.selected { background: linear-gradient(135deg, #a855f7, #7c3aed); border-color: #a855f7; box-shadow: 0 4px 12px rgba(168,85,247,0.3); }
+        .payment-option-btn:hover:not(.selected) { background: rgba(30, 27, 75, 1); border-color: #a855f7; }
+
+        .otp-input-group { display: flex; gap: 10px; margin-top: 10px; }
+        .otp-input-group input { flex: 2; background: rgba(30, 27, 75, 0.8); border: 1px solid rgba(0,255,255,0.2); border-radius: 40px; padding: 0.7rem 1.2rem; color: white; }
+        .otp-input-group input:focus { outline: none; border-color: #a855f7; }
+        .otp-input-group button { flex: 1; background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; border-radius: 40px; color: white; font-weight: 600; padding: 0.7rem; transition: 0.2s; }
+        .otp-input-group button:hover { transform: scale(1.02); }
+
+        .btn-custom-primary { background: linear-gradient(135deg, #a855f7, #7c3aed); border: none; border-radius: 40px; padding: 0.7rem 1.5rem; color: white; font-weight: 600; transition: 0.2s; }
+        .btn-custom-primary:hover { transform: scale(1.02); box-shadow: 0 4px 15px rgba(168,85,247,0.4); }
+        .btn-custom-secondary { background: rgba(30, 27, 75, 0.8); border: 1px solid rgba(0,255,255,0.2); border-radius: 40px; padding: 0.7rem 1.5rem; color: white; font-weight: 600; transition: 0.2s; }
+        .btn-custom-secondary:hover { background: rgba(30, 27, 75, 1); border-color: #a855f7; }
+
+        .vehicle-badge { position: absolute; top: 70px; left: 10px; z-index: 1000; background: rgba(0,0,0,0.8); backdrop-filter: blur(12px); border-radius: 40px; padding: 0.5rem 1rem; border: 1px solid rgba(0,255,255,0.2); font-size: 0.8rem; color: white; display: flex; align-items: center; gap: 8px; }
+        .reserved-badge { position: absolute; top: 120px; left: 10px; z-index: 1000; background: rgba(243,156,18,0.2); backdrop-filter: blur(12px); border-radius: 40px; padding: 0.5rem 1rem; border: 1px solid #f39c12; font-size: 0.8rem; color: #f39c12; display: none; cursor: pointer; }
+        .reserved-badge:hover { background: rgba(243,156,18,0.4); }
+        .vehicle-filter-notice { position: absolute; top: 70px; right: 10px; z-index: 1000; background: rgba(168,85,247,0.2); backdrop-filter: blur(12px); border-radius: 40px; padding: 0.5rem 1rem; border: 1px solid #a855f7; font-size: 0.7rem; color: #a855f7; }
+        .no-reservation-message { position: absolute; bottom: 20px; right: 20px; z-index: 1000; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); border-radius: 16px; padding: 12px 20px; font-size: 0.8rem; color: #f39c12; display: none; border-left: 3px solid #f39c12; pointer-events: none; }
+
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: none; justify-content: center; align-items: center; flex-direction: column; }
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #2ecc71; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(46,204,113,0.7); } 70% { box-shadow: 0 0 0 15px rgba(46,204,113,0); } 100% { box-shadow: 0 0 0 0 rgba(46,204,113,0); } }
+
+        .directions-panel::-webkit-scrollbar { width: 5px; }
+        .directions-panel::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .directions-panel::-webkit-scrollbar-thumb { background: #a855f7; border-radius: 10px; }
+
+        @media (max-width: 768px) {
+            .directions-panel { width: 280px; right: 5px; top: 65px; }
+            .vehicle-badge, .reserved-badge, .vehicle-filter-notice { font-size: 0.65rem; padding: 0.3rem 0.7rem; }
+        }
     </style>
 </head>
 <body>
-    <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="/"><i class="fas fa-parking"></i> SmartPark</a>
-            <div class="collapse navbar-collapse">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/search/">🔍 Find Parking</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/map/">🗺️ Live Map</a></li>
                     {% if user.is_authenticated %}
                         <li class="nav-item"><a class="nav-link" href="/my-bookings/">My Bookings</a></li>
                         <li class="nav-item"><a class="nav-link" href="/dashboard/">Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/about-us/">About Us</a></li>
                         {% if user.is_superuser %}
                             <li class="nav-item"><a class="nav-link" href="/admin/">Admin</a></li>
                         {% endif %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="/logout/" title="Logout">
-                                <i class="fas fa-sign-out-alt"></i>
-                            </a>
-                        </li>
+                        <li class="nav-item"><a class="nav-link" href="/logout/">Logout</a></li>
                     {% else %}
                         <li class="nav-item"><a class="nav-link" href="/login/">Login</a></li>
                         <li class="nav-item"><a class="nav-link" href="/register/">Register</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/about-us/">About Us</a></li>
                     {% endif %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-language"></i>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="?lang=en">English</a></li>
-                            <li><a class="dropdown-item" href="?lang=ne">नेपाली</a></li>
-                        </ul>
-                    </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- MAIN CONTENT BLOCK -->
-    {% block content %}
     <div id="map"></div>
 
-    <div class="search-panel">
-        <h6><i class="fas fa-search"></i> Find Parking Slot</h6>
-        <div class="search-input-group">
-            <input type="text" id="slotSearchInput" placeholder="Slot number (e.g., TOK1013)">
-            <button onclick="searchAndHighlightSlot()"><i class="fas fa-search"></i></button>
+    <div class="vehicle-badge" id="vehicleBadge">
+        <i class="fas fa-car"></i> Current Vehicle: <strong id="currentVehicleDisplay">Sedan</strong>
+    </div>
+
+    <div class="vehicle-filter-notice" id="filterNotice">
+        <i class="fas fa-filter"></i> Showing only <span id="filterVehicleName">Sedan</span> compatible slots
+    </div>
+
+    <div class="reserved-badge" id="reservedBadge" onclick="toggleDirections()">
+        <i class="fas fa-star"></i> Reserved: <span id="reservedSlotDisplay">-</span> <i class="fas fa-directions ms-2"></i>
+    </div>
+
+    <div class="no-reservation-message" id="noReservationMsg">
+        <i class="fas fa-info-circle"></i> No reserved slot for current vehicle. Please reserve a slot first.
+    </div>
+
+    <button class="location-btn" onclick="locateUser()" title="Find My Location"><i class="fas fa-location-arrow"></i></button>
+    <button class="directions-btn" onclick="toggleDirections()" title="Get Directions to Your Reserved Slot" id="directionsBtn"><i class="fas fa-directions"></i></button>
+
+    <div class="directions-panel" id="directionsPanel">
+        <div class="panel-header">
+            <h6><i class="fas fa-route me-2"></i>Route to Your Reserved Slot</h6>
+            <button class="close-panel" onclick="closeDirectionsPanel()" title="Close"><i class="fas fa-times"></i></button>
         </div>
-        <div id="searchResult" class="mt-2"></div>
+        <div id="routeInfo"></div>
     </div>
 
-    <div class="info-panel">
-        <h6><i class="fas fa-chart-line"></i> Live Parking Status</h6>
-        <div class="stats-row">
-            <div class="stat-box stat-available"><div class="stat-number" id="availableCount">--</div><div>Available</div></div>
-            <div class="stat-box stat-occupied"><div class="stat-number" id="occupiedCount">--</div><div>Occupied</div></div>
-            <div class="stat-box stat-reserved"><div class="stat-number" id="reservedCount">--</div><div>Reserved</div></div>
-        </div>
-        <hr class="my-2" style="border-color: rgba(255,255,255,0.15);">
-        <h6><i class="fas fa-location-dot"></i> Nearest Slots (for <span id="vehicleLabel">Sedan</span>)</h6>
-        <div id="nearestSlotsList" style="max-height: 280px; overflow-y: auto;"><div class="text-center">📍 Click "Find Nearest" or allow location</div></div>
-        <button class="btn btn-primary btn-sm w-100 mt-2 btn-find" onclick="findNearestParkingFromLocation(true)">
-            <i class="fas fa-hand-point-right finger-icon"></i> Find Nearest Parking
-        </button>
-    </div>
-
-    <div class="legend">
-        <span><i class="fas fa-circle" style="color:#2ecc71;"></i> Available</span>
-        <span><i class="fas fa-circle" style="color:#e74c3c;"></i> Occupied</span>
-        <span><i class="fas fa-circle" style="color:#f39c12;"></i> Reserved</span>
-        <span><i class="fas fa-circle" style="color:#3498db;"></i> Zone</span>
-        <span><i class="fas fa-circle" style="color:#4361ee;"></i> You</span>
-    </div>
-
-    <button class="location-btn" onclick="locateUser()"><i class="fas fa-location-arrow"></i></button>
-    <button class="directions-fab" id="directionsFab" onclick="showDirectionsToReservedSlot()" title="Get directions to your reserved slot"><i class="fas fa-directions"></i></button>
-
-    <div class="vehicle-selector">
-        <button class="vehicle-btn active" data-vehicle="Sedan" onclick="selectVehicle('Sedan')">🚗 Sedan</button>
-        <button class="vehicle-btn" data-vehicle="SUV" onclick="selectVehicle('SUV')">🚙 SUV</button>
-        <button class="vehicle-btn" data-vehicle="Compact" onclick="selectVehicle('Compact')">🚘 Compact</button>
-        <button class="vehicle-btn" data-vehicle="EV" onclick="selectVehicle('EV')">⚡ EV</button>
-        <button class="vehicle-btn" data-vehicle="Motorcycle" onclick="selectVehicle('Motorcycle')">🏍️ Bike</button>
-    </div>
+    <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><p style="color: white; margin-top: 15px;">Processing payment...</p></div>
 
     <!-- Reservation Modal -->
     <div class="modal fade" id="reservationModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white" style="border-bottom: none;">
-                    <h5 class="modal-title"><i class="fas fa-credit-card me-2"></i>Reserve Parking Slot</h5>
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-parking me-2" style="color:#a855f7;"></i> Reserve Parking Slot</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3"><label>Slot Number</label><input type="text" class="form-control bg-dark text-white" id="modalSlotNumber" readonly></div>
-                    <div class="mb-3"><label>Vehicle Type</label><input type="text" class="form-control bg-dark text-white" id="modalVehicleType" readonly></div>
-                    <div class="mb-3"><label>Vehicle Number</label><input type="text" class="form-control bg-dark text-white" id="modalVehicleNumber" placeholder="e.g., BA 01 KHA 1234" required></div>
-                    <div class="mb-3"><label>Start Date & Time</label><input type="datetime-local" class="form-control bg-dark text-white" id="modalStartTime"></div>
-                    <div class="mb-3"><label>Duration (hours)</label><select class="form-select bg-dark text-white" id="modalDurationHours" onchange="updateModalPrice()">
-                        <option value="0.5">30 min</option><option value="1">1 hour</option><option value="2" selected>2 hours</option>
-                        <option value="3">3h</option><option value="4">4h</option><option value="5">5h</option><option value="6">6h</option>
-                        <option value="8">8h</option><option value="12">12h</option><option value="24">24h</option>
-                    </select></div>
-                    <div class="mb-3"><label>Total Price (NPR)</label><div class="price-display" id="modalTotalPrice" style="font-size: 1.8rem; font-weight: bold; color: #2ecc71;">Rs 0</div></div>
-                    <div class="alert alert-info small" style="background: rgba(168,85,247,0.2); border-color: #a855f7;">Pricing: Bike Rs15/h, Car Rs40/h, EV Rs50/h. Flat for 5+ hrs: Bike Rs40, Car Rs70, EV Rs80</div>
+                    <div class="form-group">
+                        <label><i class="fas fa-hashtag me-1"></i> Slot Number</label>
+                        <input type="text" class="form-control" id="modalSlotNumber" readonly>
+                    </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Payment Method</label>
-                        <div class="d-flex gap-2">
+                    <div class="form-group">
+                        <label><i class="fas fa-car me-1"></i> Vehicle Type</label>
+                        <input type="text" class="form-control" id="modalVehicleType" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-id-card me-1"></i> Vehicle Number</label>
+                        <input type="text" class="form-control" id="modalVehicleNumber" placeholder="e.g., BA 01 KHA 1234" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-calendar-alt me-1"></i> Start Date & Time</label>
+                        <input type="datetime-local" class="form-control" id="modalStartTime">
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-hourglass-half me-1"></i> Duration (hours)</label>
+                        <select class="form-select" id="modalDurationHours" onchange="updateModalPrice()">
+                            <option value="0.5">30 minutes</option>
+                            <option value="1">1 hour</option>
+                            <option value="2" selected>2 hours</option>
+                            <option value="3">3 hours</option>
+                            <option value="4">4 hours</option>
+                            <option value="5">5 hours</option>
+                            <option value="6">6 hours</option>
+                            <option value="8">8 hours</option>
+                            <option value="12">12 hours</option>
+                            <option value="24">24 hours</option>
+                        </select>
+                    </div>
+
+                    <div class="price-display">
+                        <div class="price-label">TOTAL PRICE</div>
+                        <div class="price-value" id="modalTotalPrice">Rs 0</div>
+                        <div class="price-unit">Nepalese Rupees (NPR)</div>
+                    </div>
+
+                    <div class="pricing-info">
+                        <i class="fas fa-info-circle"></i> <strong>💰 Affordable Pricing (Max Rs 100/day):</strong><br>
+                        • 🚗 Cars (Sedan, SUV, Compact): Rs 15/hour (Max Rs 75/day)<br>
+                        • 🏍️ Motorcycle: Rs 10/hour (Max Rs 50/day)<br>
+                        • ⚡ EV: Rs 20/hour (Max Rs 100/day)<br>
+                        <small class="text-white-50">✨ 20% discount for 5+ hours | 30% discount for 8+ hours</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-credit-card me-1"></i> Payment Method</label>
+                        <div class="payment-option-group">
                             <div class="payment-option-btn" id="payEsewa" onclick="selectPaymentMethod('esewa')">
                                 <i class="fas fa-building-columns"></i> eSewa
                             </div>
@@ -415,124 +278,51 @@
                                 <i class="fas fa-mobile-alt"></i> Khalti
                             </div>
                         </div>
-                        <div id="accountIdField" class="mt-2" style="display: none;">
-                            <label class="form-label" id="accountLabel">Email Address</label>
-                            <input type="email" class="form-control bg-dark text-white" id="accountId" placeholder="e.g., user@example.com">
+                    </div>
+
+                    <div id="accountIdField" style="display: none;">
+                        <div class="form-group">
+                            <label><i class="fas fa-envelope me-1"></i> Email Address</label>
+                            <input type="email" class="form-control" id="accountId" placeholder="user@example.com">
                         </div>
-                        <div id="otpSection" style="display: none; margin-top: 1rem;">
-                            <label class="form-label">Enter OTP</label>
+                    </div>
+
+                    <div id="otpSection" style="display: none;">
+                        <div class="form-group">
+                            <label><i class="fas fa-key me-1"></i> Enter OTP</label>
                             <div class="otp-input-group">
                                 <input type="text" id="otpCode" placeholder="6-digit OTP" maxlength="6">
                                 <button type="button" id="verifyOtpBtn" class="btn btn-success">Verify & Pay</button>
                             </div>
-                            <div class="resend-otp" id="resendOtpBtn">Resend OTP</div>
+                            <div class="text-end mt-2">
+                                <small class="text-primary" id="resendOtpBtn" style="cursor: pointer;">Resend OTP</small>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.1);">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="sendOtpBtn" style="display: none;">Send OTP to Email</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Invoice Modal -->
-    <div class="modal fade" id="invoiceModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content bg-dark text-white">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title"><i class="fas fa-file-invoice"></i> Payment Invoice</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="invoiceContent">
-                    <div class="text-center py-3">
-                        <div class="spinner-border text-primary" role="status"></div>
-                        <p>Loading invoice...</p>
-                    </div>
-                </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="takeScreenshot()"><i class="fas fa-camera"></i> Take Screenshot</button>
-                    <button class="btn btn-primary" onclick="downloadPDF()"><i class="fas fa-download"></i> Download PDF</button>
-                    <button class="btn btn-success" data-bs-dismiss="modal"><i class="fas fa-check"></i> Close</button>
+                    <button type="button" class="btn-custom-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn-custom-primary" id="sendOtpBtn" style="display: none;">Send OTP</button>
                 </div>
             </div>
         </div>
-    </div>
-
-    <div id="directionsPanel" class="directions-panel">
-        <button class="close-directions" onclick="hideDirections()">✖</button>
-        <h6><i class="fas fa-directions"></i> Route to slot</h6>
-        <div id="stepsList"></div>
-        <div id="remainingDistance" class="distance-left mt-1"></div>
-        <div class="small text-white-50 mt-1">* Road distance may be longer than straight line</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
-        // ========== CSRF TOKEN HELPER ==========
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
+        function getCookie(name) { let value = null; if (document.cookie && document.cookie !== '') { const cookies = document.cookie.split(';'); for (let cookie of cookies) { cookie = cookie.trim(); if (cookie.substring(0, name.length + 1) === (name + '=')) { value = decodeURIComponent(cookie.substring(name.length + 1)); break; } } } return value; }
         const csrftoken = getCookie('csrftoken');
 
-        // ========== GLOBALS ==========
-        let map = null;
-        let markerCluster = null;
-        let zoneCircles = [];
-        let userMarker = null;
-        let currentLocation = null;
-        let currentVehicle = 'Sedan';
-        let allSlotsData = [];
-        let refreshInterval = null;
-        let currentReserveSlot = null;
-        let modal = null;
-        let markerMap = new Map();
-        let routingControl = null;
-        let reservedSlotNumber = null;
-        let selectedPaymentMethod = null;
-        let otpSent = false;
-        let currentEmail = '';
-        let currentInvoiceData = null;
+        let map = null, markerCluster = null, zoneCircles = [], markerMap = new Map(), refreshInterval = null, currentLocation = null, userMarker = null, routingControl = null;
+        let currentVehicle = localStorage.getItem('selectedVehicle') || 'Sedan', currentReserveSlot = null, selectedPaymentMethod = null, currentEmail = '', modal = null, isProcessing = false;
 
-        const urlParams = new URLSearchParams(window.location.search);
-        let userLat = urlParams.get('lat');
-        let userLng = urlParams.get('lng');
-        let vehicleParam = urlParams.get('vehicle');
-        let vehicleNumberParam = urlParams.get('vehicle_number');
-        let durationParam = urlParams.get('duration');
-        let startTimeParam = urlParams.get('start_time');
-
-        if (userLat && userLng) currentLocation = { lat: parseFloat(userLat), lng: parseFloat(userLng) };
-        if (vehicleParam) currentVehicle = vehicleParam;
-        if (durationParam) durationParam = parseFloat(durationParam);
-        if (!startTimeParam) {
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            startTimeParam = now.toISOString().slice(0, 16);
-        }
-
-        const savedSlot = localStorage.getItem('reservedSlot');
-        if (savedSlot) {
-            reservedSlotNumber = savedSlot;
-        }
+        let reservedSlots = JSON.parse(localStorage.getItem('reservedSlots')) || {};
+        let reservedSlotNumber = reservedSlots[currentVehicle] || null;
+        let routeActive = false;
 
         const VEHICLE_COMPATIBILITY = {
             'Sedan': ['Regular', 'Premium'],
@@ -542,137 +332,169 @@
             'Motorcycle': ['Compact', 'Regular']
         };
 
-        function haversineDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371000;
-            const phi1 = lat1 * Math.PI / 180;
-            const phi2 = lat2 * Math.PI / 180;
-            const dphi = (lat2 - lat1) * Math.PI / 180;
-            const dlambda = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dphi/2) * Math.sin(dphi/2) +
-                      Math.cos(phi1) * Math.cos(phi2) *
-                      Math.sin(dlambda/2) * Math.sin(dlambda/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
+        // REASONABLE PRICING - Max Rs 100 per day
+        function calculatePriceForVehicle(vehicleType, durationHours) {
+            let baseRate = 0;
 
-        function navigateTo(url) { window.location.href = url; }
-
-        function selectVehicle(vehicle) {
-            if (currentVehicle === vehicle) return;
-            currentVehicle = vehicle;
-            document.querySelectorAll('.vehicle-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.getAttribute('data-vehicle') === vehicle) btn.classList.add('active');
-            });
-            document.getElementById('vehicleLabel').innerText = vehicle;
-            filterMarkersByVehicle(vehicle);
-            if (currentLocation) {
-                findNearestParkingFromLocation(true);
+            if (vehicleType === 'Motorcycle') {
+                baseRate = 10; // Rs 10 per hour
+            } else if (vehicleType === 'EV') {
+                baseRate = 20; // Rs 20 per hour
             } else {
-                document.getElementById('nearestSlotsList').innerHTML = '<div class="text-center">📍 Enable location to see nearest slots</div>';
+                baseRate = 15; // Rs 15 per hour for cars
             }
-            showToast(`Switched to ${vehicle} – showing compatible slots`, 'info');
+
+            let duration = parseFloat(durationHours);
+            let total = baseRate * duration;
+
+            // Apply discounts for longer durations
+            if (duration >= 8) {
+                total = total * 0.7; // 30% discount for 8+ hours
+            } else if (duration >= 5) {
+                total = total * 0.8; // 20% discount for 5-7 hours
+            } else if (duration >= 3) {
+                total = total * 0.9; // 10% discount for 3-4 hours
+            }
+
+            // Apply maximum daily cap
+            let maxDaily = 0;
+            if (vehicleType === 'Motorcycle') maxDaily = 50;
+            else if (vehicleType === 'EV') maxDaily = 100;
+            else maxDaily = 75;
+
+            total = Math.min(total, maxDaily);
+
+            return Math.round(total);
         }
 
-        function filterMarkersByVehicle(vehicle) {
-            if (!markerCluster) return;
-            const compatibleTypes = VEHICLE_COMPATIBILITY[vehicle] || ['Regular'];
-            markerCluster.eachLayer(marker => {
-                const slotType = marker.options.slotType;
-                if (slotType && compatibleTypes.includes(slotType)) markerCluster.addLayer(marker);
-                else markerCluster.removeLayer(marker);
+        function getHourlyRateDisplay(vehicleType) {
+            if (vehicleType === 'Motorcycle') return 'Rs 10/hour';
+            if (vehicleType === 'EV') return 'Rs 20/hour';
+            return 'Rs 15/hour';
+        }
+
+        function getPriceDisplay(vehicleType, zoneHourlyRate) {
+            const hourlyRate = getHourlyRateDisplay(vehicleType);
+            if (vehicleType === 'Motorcycle') return `${hourlyRate} (Bike rate - Max Rs 50/day)`;
+            if (vehicleType === 'EV') return `${hourlyRate} (EV rate - Max Rs 100/day)`;
+            return `${hourlyRate} (Car rate - Max Rs 75/day)`;
+        }
+
+        function getVehicleDisplayName(vehicle) {
+            if (vehicle === 'Motorcycle') return '🏍️ Bike';
+            if (vehicle === 'EV') return '⚡ EV';
+            if (vehicle === 'Compact') return '🚘 Compact';
+            if (vehicle === 'SUV') return '🚙 SUV';
+            return '🚗 Sedan';
+        }
+
+        function updateVehicleBadge() {
+            document.getElementById('currentVehicleDisplay').innerHTML = getVehicleDisplayName(currentVehicle);
+            document.getElementById('filterVehicleName').innerHTML = currentVehicle;
+            reservedSlotNumber = reservedSlots[currentVehicle] || null;
+            updateReservedBadge();
+        }
+
+        function updateReservedBadge() {
+            if (reservedSlotNumber) {
+                document.getElementById('reservedBadge').style.display = 'block';
+                document.getElementById('reservedSlotDisplay').innerText = reservedSlotNumber;
+                document.getElementById('directionsBtn').classList.add('pulse');
+                document.getElementById('noReservationMsg').style.display = 'none';
+            } else {
+                document.getElementById('reservedBadge').style.display = 'none';
+                document.getElementById('directionsBtn').classList.remove('pulse');
+            }
+        }
+
+        function showNoReservationMessage() {
+            document.getElementById('noReservationMsg').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('noReservationMsg').style.display = 'none';
+            }, 3000);
+        }
+
+        function closeDirectionsPanel() { document.getElementById('directionsPanel').style.display = 'none'; }
+        function showLoading(show) { document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none'; }
+        function showToast(msg, type = 'info') {
+            const colors = { success: '#2ecc71', error: '#e74c3c', warning: '#f39c12', info: '#3498db' };
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.style.borderLeftColor = colors[type];
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'} me-2"></i> ${msg}<button onclick="this.parentElement.remove()" class="btn-close btn-sm ms-3" style="filter: invert(1);"></button>`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        function drawCompatibleSlots(zones) {
+            if (markerCluster) map.removeLayer(markerCluster);
+            const markers = [];
+            markerMap.clear();
+
+            const compatibleTypes = VEHICLE_COMPATIBILITY[currentVehicle] || ['Regular'];
+            let totalCompatibles = 0;
+
+            zones.forEach(zone => {
+                if (zone.slots && zone.coordinates) {
+                    const baseLat = zone.coordinates.lat, baseLng = zone.coordinates.lng;
+                    zone.slots.forEach((slot, idx) => {
+                        if (!compatibleTypes.includes(slot.slot_type)) return;
+
+                        totalCompatibles++;
+                        const angle = (idx * 30) * Math.PI / 180, offset = 0.0006;
+                        const lat = baseLat + Math.cos(angle) * offset, lng = baseLng + Math.sin(angle) * offset;
+                        const isReservedSlot = (reservedSlotNumber === slot.slot_number);
+                        let color, icon;
+                        if (isReservedSlot) { color = '#f39c12'; icon = 'fa-star'; }
+                        else if (slot.status === 'available') { color = '#2ecc71'; icon = 'fa-check-circle'; }
+                        else if (slot.status === 'occupied') { color = '#e74c3c'; icon = 'fa-car'; }
+                        else { color = '#f39c12'; icon = 'fa-clock'; }
+
+                        const marker = L.marker([lat, lng], {
+                            icon: L.divIcon({ html: `<div style="background:${color}; width:26px; height:26px; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.3); cursor:pointer;"><i class="fas ${icon}" style="color:white; font-size:12px;"></i></div>`, iconSize: [26,26], iconAnchor: [13,13] }),
+                            slotType: slot.slot_type,
+                            slotNumber: slot.slot_number,
+                            zoneName: zone.zone_name,
+                            hourlyRate: zone.hourly_rate,
+                            status: slot.status,
+                            isReserved: isReservedSlot
+                        });
+
+                        let statusText = isReservedSlot ? '⭐ YOUR RESERVED SLOT ⭐' : (slot.status === 'available' ? 'Available' : (slot.status === 'occupied' ? 'Occupied' : 'Reserved'));
+                        let statusClass = isReservedSlot ? 'warning' : (slot.status === 'available' ? 'success' : (slot.status === 'occupied' ? 'danger' : 'warning'));
+                        const displayPrice = getPriceDisplay(currentVehicle, zone.hourly_rate);
+                        let actionButton = isReservedSlot ? `<button class="btn btn-warning btn-sm w-100 mt-2" onclick="toggleDirections()"><i class="fas fa-directions"></i> Get Directions</button>` : (slot.status === 'available' ? `<button class="btn btn-success btn-sm w-100 mt-2" onclick="openReservationModal('${slot.slot_number}')"><i class="fas fa-credit-card"></i> Reserve Now</button>` : `<button class="btn btn-secondary btn-sm w-100 mt-2" disabled>Not Available</button>`);
+
+                        marker.bindPopup(`<div style="min-width:260px; text-align:center;">${isReservedSlot ? '<div style="font-size:1rem; margin-bottom:5px; color:#f39c12;">⭐ YOUR RESERVED SLOT ⭐</div>' : ''}<strong>Slot ${slot.slot_number}</strong><br><span class="badge bg-${statusClass}">${statusText}</span><br><i class="fas fa-building"></i> ${zone.zone_name}<br><i class="fas fa-tag"></i> ${slot.slot_type}<br><div class="slot-price mt-2" style="color:#f39c12; font-weight:700;">💰 ${displayPrice}</div>${actionButton}</div>`);
+
+                        markerMap.set(slot.slot_number, marker);
+                        markers.push(marker);
+                    });
+                }
             });
+
+            document.getElementById('filterNotice').innerHTML = `<i class="fas fa-filter"></i> Showing ${totalCompatibles} ${currentVehicle} compatible slots`;
+
+            markerCluster = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 50 });
+            markerCluster.addLayers(markers);
+            map.addLayer(markerCluster);
         }
 
         function initMap() {
-            const center = currentLocation ? [currentLocation.lat, currentLocation.lng] : [27.7172, 85.3240];
-            map = L.map('map').setView(center, 14);
+            map = L.map('map').setView([27.7172, 85.3240], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-            L.control.scale({ metric: true, imperial: false }).addTo(map);
-            if (currentLocation) {
-                userMarker = L.marker([currentLocation.lat, currentLocation.lng], {
-                    icon: L.divIcon({ html: '<div style="background:#4361ee; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow:0 0 0 2px #4361ee;"></div>', iconSize: [12,12] })
-                }).addTo(map).bindPopup('Your Location').openPopup();
-            }
         }
 
         async function loadParkingData() {
-            const loadingToast = showToast('Loading parking data...', 'info', true);
             try {
                 const response = await fetch('/api/live/');
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
-
-                if (data.summary) {
-                    updateStats(data.summary);
-                } else {
-                    updateStats({ total_available: 0, total_occupied: 0, total_reserved: 0 });
-                }
-
                 if (data.success && data.zones && data.zones.length > 0) {
                     drawZones(data.zones);
-                    drawAllSlots(data.zones);
-                    storeSlotsData(data.zones);
-                    filterMarkersByVehicle(currentVehicle);
-                    if (currentLocation) await findNearestParkingFromLocation(false);
-
-                    // Add heatmap
-                    const heatData = [];
-                    data.zones.forEach(zone => {
-                        const occupiedCount = zone.occupied_slots;
-                        const totalSlots = zone.total_slots;
-                        const lat = zone.coordinates.lat;
-                        const lng = zone.coordinates.lng;
-                        if (lat && lng && totalSlots > 0) {
-                            heatData.push([lat, lng, occupiedCount / totalSlots]);
-                        }
-                    });
-                    if (heatData.length > 0 && map) {
-                        if (window.heatLayer) map.removeLayer(window.heatLayer);
-                        window.heatLayer = L.heatLayer(heatData, { radius: 25, blur: 15, maxZoom: 17 }).addTo(map);
-                    }
-                } else {
-                    if (markerCluster) map.removeLayer(markerCluster);
-                    if (zoneCircles.length) zoneCircles.forEach(c => map.removeLayer(c));
-                    console.warn("No parking zones found.");
-                    showToast('No parking zones configured. Please contact administrator.', 'warning');
+                    drawCompatibleSlots(data.zones);
+                    if (reservedSlotNumber && currentLocation && routeActive) setTimeout(() => showDirectionsToReservedSlot(), 500);
                 }
-            } catch (error) {
-                console.error("Error loading live data", error);
-                updateStats({ total_available: 0, total_occupied: 0, total_reserved: 0 });
-                showToast('Failed to load parking data. Check server connection.', 'error');
-            } finally {
-                if (loadingToast && loadingToast.remove) loadingToast.remove();
-            }
-        }
-
-        function updateStats(summary) {
-            document.getElementById('availableCount').textContent = summary.total_available || 0;
-            document.getElementById('occupiedCount').textContent = summary.total_occupied || 0;
-            document.getElementById('reservedCount').textContent = summary.total_reserved || 0;
-        }
-
-        function storeSlotsData(zones) {
-            allSlotsData = [];
-            zones.forEach(zone => {
-                if (zone.slots && zone.coordinates) {
-                    zone.slots.forEach((slot, idx) => {
-                        const angle = (idx * 30) * Math.PI / 180, offset = 0.0008;
-                        allSlotsData.push({
-                            slot_number: slot.slot_number,
-                            zone_id: zone.zone_id,
-                            zone_name: zone.zone_name,
-                            status: slot.status,
-                            slot_type: slot.slot_type,
-                            hourly_rate: zone.hourly_rate,
-                            coordinates: {
-                                lat: zone.coordinates.lat + Math.cos(angle) * offset,
-                                lng: zone.coordinates.lng + Math.sin(angle) * offset
-                            }
-                        });
-                    });
-                }
-            });
+            } catch (error) { console.error(error); }
         }
 
         function drawZones(zones) {
@@ -681,456 +503,124 @@
             zones.forEach(zone => {
                 if (zone.coordinates?.lat && zone.coordinates?.lng) {
                     const color = zone.availability_percentage > 50 ? '#2ecc71' : (zone.availability_percentage > 20 ? '#f39c12' : '#e74c3c');
-                    const circle = L.circle([zone.coordinates.lat, zone.coordinates.lng], { radius: 100, color: color, fillColor: color, fillOpacity: 0.1, weight: 2 }).addTo(map);
-                    circle.bindPopup(`<b>${zone.zone_name}</b><br>Available: ${zone.available_slots}/${zone.total_slots}<br>Rate: Rs ${zone.hourly_rate}/hr`);
+                    const circle = L.circle([zone.coordinates.lat, zone.coordinates.lng], { radius: 120, color: color, fillColor: color, fillOpacity: 0.1, weight: 2 }).addTo(map);
+                    circle.bindPopup(`<b>${zone.zone_name}</b><br>Available: ${zone.available_slots}/${zone.total_slots}<br>Base Rate: Rs ${zone.hourly_rate}/hr`);
                     zoneCircles.push(circle);
                 }
             });
         }
 
-        function drawAllSlots(zones) {
-            if (markerCluster) map.removeLayer(markerCluster);
-            const markers = [];
-            markerMap.clear();
-            zones.forEach(zone => {
-                if (zone.slots && zone.coordinates) {
-                    const baseLat = zone.coordinates.lat, baseLng = zone.coordinates.lng;
-                    zone.slots.forEach((slot, idx) => {
-                        const angle = (idx * 30) * Math.PI / 180, offset = 0.0006;
-                        const lat = baseLat + Math.cos(angle) * offset;
-                        const lng = baseLng + Math.sin(angle) * offset;
-                        let color, icon;
-                        if (slot.status === 'available') { color = '#2ecc71'; icon = 'fa-check-circle'; }
-                        else if (slot.status === 'occupied') { color = '#e74c3c'; icon = 'fa-car'; }
-                        else { color = '#f39c12'; icon = 'fa-clock'; }
-                        const marker = L.marker([lat, lng], {
-                            icon: L.divIcon({ html: `<div style="background:${color}; width:22px; height:22px; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.3);"><i class="fas ${icon}" style="color:white; font-size:10px;"></i></div>`, iconSize: [22,22], iconAnchor: [11,11] }),
-                            slotType: slot.slot_type,
-                            slotNumber: slot.slot_number,
-                            zoneName: zone.zone_name,
-                            hourlyRate: zone.hourly_rate
-                        });
-                        updateMarkerPopup(marker, slot, zone.zone_name, zone.hourly_rate, null);
-                        markerMap.set(slot.slot_number, marker);
-                        markers.push(marker);
-                    });
-                }
-            });
-            markerCluster = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40 });
-            markerCluster.addLayers(markers);
-            map.addLayer(markerCluster);
-        }
-
-        function updateMarkerPopup(marker, slot, zoneName, hourlyRate, vehicleNumber = null) {
-            let vehicleInfo = '';
-            if (slot.status === 'occupied' && vehicleNumber) {
-                vehicleInfo = `<div><i class="fas fa-user"></i> Vehicle: ${vehicleNumber}</div>`;
-            } else if (slot.status === 'reserved' && vehicleNumber) {
-                vehicleInfo = `<div><i class="fas fa-user"></i> Reserved for: ${vehicleNumber}</div>`;
-            }
-            marker.bindPopup(`
-                <div style="min-width:200px; font-size:0.8rem;">
-                    <div class="d-flex justify-content-between"><b>Slot ${slot.slot_number}</b>
-                    <span class="badge bg-${slot.status === 'available' ? 'success' : (slot.status === 'occupied' ? 'danger' : 'warning')}">${slot.status.toUpperCase()}</span></div>
-                    <div><i class="fas fa-building"></i> Zone: ${zoneName}</div>
-                    <div><i class="fas fa-tag"></i> Type: ${slot.slot_type}</div>
-                    <div><i class="fas fa-rupee-sign"></i> Rate: Rs ${hourlyRate}/hr</div>
-                    ${vehicleInfo}
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
-                        ${slot.status === 'available' ? `<button class="btn btn-success btn-sm reserve-small-btn" onclick="openReservationModal('${slot.slot_number}')" style="flex:1;"><i class="fas fa-parking"></i> Reserve</button>` : '<button class="btn btn-secondary btn-sm" disabled style="flex:1;">Not available</button>'}
-                    </div>
-                </div>
-            `);
-        }
-
-        async function searchAndHighlightSlot() {
-            const term = document.getElementById('slotSearchInput').value.trim().toUpperCase();
-            const resDiv = document.getElementById('searchResult');
-            if (!term) {
-                resDiv.innerHTML = '<div class="alert alert-warning py-1">⚠️ Enter slot number</div>';
-                setTimeout(() => resDiv.innerHTML = '', 2000);
-                return;
-            }
-            try {
-                const response = await fetch(`/api/search-slots/?q=${encodeURIComponent(term)}`);
-                const data = await response.json();
-                if (data.success && data.results && data.results.length > 0) {
-                    const slot = data.results[0];
-                    let statusClass = '';
-                    let statusText = '';
-                    let borderColor = '';
-                    if (slot.status === 'available') { statusClass = 'available'; statusText = 'Available'; borderColor = '#2ecc71'; }
-                    else if (slot.status === 'occupied') { statusClass = 'occupied'; statusText = 'Occupied'; borderColor = '#e74c3c'; }
-                    else { statusClass = 'reserved'; statusText = 'Reserved'; borderColor = '#f39c12'; }
-
-                    let distanceHtml = '';
-                    let walkTimeHtml = '';
-                    if (currentLocation && slot.coordinates && slot.coordinates.lat && slot.coordinates.lng) {
-                        const dist = haversineDistance(currentLocation.lat, currentLocation.lng, slot.coordinates.lat, slot.coordinates.lng);
-                        const distMeters = Math.round(dist);
-                        const walkMin = Math.floor(dist / 1.4 / 60);
-                        distanceHtml = `<div><i class="fas fa-map-marker-alt"></i> Distance: ${distMeters} m</div>`;
-                        walkTimeHtml = `<div><i class="fas fa-walking"></i> Walk time: ~${walkMin} min</div>`;
-                    } else {
-                        distanceHtml = `<div><i class="fas fa-map-marker-alt"></i> Enable location to see distance</div>`;
-                    }
-
-                    resDiv.innerHTML = `
-                        <div class="search-result-card ${statusClass}" style="border-left-color: ${borderColor};">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <strong>✅ Slot ${slot.slot_number}</strong>
-                                <span class="badge bg-${slot.status === 'available' ? 'success' : (slot.status === 'occupied' ? 'danger' : 'warning')}">${statusText}</span>
-                            </div>
-                            <div><i class="fas fa-building"></i> Zone: ${slot.zone_name}</div>
-                            <div><i class="fas fa-tag"></i> Type: ${slot.slot_type}</div>
-                            <div><i class="fas fa-rupee-sign"></i> Rate: Rs ${slot.hourly_rate}/hr</div>
-                            ${distanceHtml}
-                            ${walkTimeHtml}
-                            <div class="btn-group-small mt-2">
-                                ${slot.status === 'available' ? `<button class="btn btn-success btn-sm reserve-small-btn" onclick="openReservationModal('${slot.slot_number}')"><i class="fas fa-credit-card"></i> Reserve</button>` : ''}
-                            </div>
-                        </div>
-                    `;
-                    const marker = markerMap.get(slot.slot_number);
-                    if (marker) {
-                        marker.openPopup();
-                        map.setView(marker.getLatLng(), 18);
-                        const flash = L.marker(marker.getLatLng(), {
-                            icon: L.divIcon({ html: '<div style="background:#9b59b6; width:30px; height:30px; border-radius:50%; border:2px solid white;"></div>', iconSize: [30,30] })
-                        }).addTo(map);
-                        setTimeout(() => map.removeLayer(flash), 1500);
-                    }
-                    showToast(`Found ${slot.slot_number} - ${statusText}`, slot.status === 'available' ? 'success' : 'warning');
-                } else {
-                    resDiv.innerHTML = `<div class="alert alert-danger py-1">❌ Slot "${term}" not found</div>`;
-                    showToast('Slot not found', 'error');
-                }
-            } catch (error) {
-                console.error('Search error:', error);
-                resDiv.innerHTML = `<div class="alert alert-danger py-1">❌ Error searching for slot</div>`;
-                showToast('Search error', 'error');
-            }
-            setTimeout(() => {
-                if (resDiv.innerHTML && (resDiv.innerHTML.includes('not found') || resDiv.innerHTML.includes('Error'))) {
-                    setTimeout(() => resDiv.innerHTML = '', 5000);
-                } else {
-                    setTimeout(() => resDiv.innerHTML = '', 5000);
-                }
-            }, 5000);
-        }
-
-        function highlightSlotByNumber(slotNumber) {
-            const marker = markerMap.get(slotNumber);
-            if (marker) {
-                marker.openPopup();
-                map.setView(marker.getLatLng(), 17);
-            }
-        }
-
         function locateUser() {
             if (navigator.geolocation) {
+                showToast('Getting your location...', 'info');
                 navigator.geolocation.getCurrentPosition(pos => {
-                    currentLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                     if (userMarker) map.removeLayer(userMarker);
-                    userMarker = L.marker([currentLocation.lat, currentLocation.lng], {
-                        icon: L.divIcon({ html: '<div style="background:#4361ee; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow:0 0 0 2px #4361ee;"></div>', iconSize: [12,12] })
-                    }).addTo(map).bindPopup('Your Location').openPopup();
-                    map.setView([currentLocation.lat, currentLocation.lng], 15);
-                    showToast('Location detected', 'success');
-                    findNearestParkingFromLocation(true);
-                    if (reservedSlotNumber) {
-                        document.getElementById('directionsFab').style.display = 'flex';
-                        showDirectionsToSlot(reservedSlotNumber);
-                    }
-                }, () => { showToast('Location denied', 'error'); });
-            } else { showToast('Geolocation not supported', 'error'); }
+                    currentLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    userMarker = L.marker([currentLocation.lat, currentLocation.lng], { icon: L.divIcon({ html: '<div style="background:#4361ee; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow:0 0 0 3px #4361ee;"></div>', iconSize: [16,16] }) }).addTo(map).bindPopup('📍 You are here').openPopup();
+                    map.setView([currentLocation.lat, currentLocation.lng], 14);
+                    showToast(`Location detected! Showing only ${currentVehicle} compatible slots.`, 'success');
+                }, () => showToast('Location access denied', 'error'));
+            } else showToast('Geolocation not supported', 'error');
         }
 
-        async function findNearestParkingFromLocation(showNotification = false) {
-            if (!currentLocation) { showToast('Get location first', 'warning'); return; }
-            const btn = document.querySelector('.btn-find i');
-            if (btn) btn.classList.add('finger-icon');
-            try {
-                const response = await fetch('/api/nearest/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrftoken
-                    },
-                    body: JSON.stringify({ lat: currentLocation.lat, lng: currentLocation.lng, vehicle_type: currentVehicle, limit: 10 })
-                });
-                const data = await response.json();
-                const container = document.getElementById('nearestSlotsList');
-                if (data.success && data.nearest_slots && data.nearest_slots.length > 0) {
-                    let html = '';
-                    data.nearest_slots.forEach((slot, idx) => {
-                        const highlightClass = idx === 0 ? 'highlight' : '';
-                        html += `
-                            <div class="nearest-item ${highlightClass}" onclick="openReservationModal('${slot.slot_number}')">
-                                <div><b>#${idx+1} ${slot.slot_number}</b> <i class="fas fa-map-marker-alt"></i> ${slot.distance_meters}m</div>
-                                <div><i class="fas fa-building"></i> ${slot.zone_name} | ${slot.slot_type}</div>
-                                <div><i class="fas fa-rupee-sign"></i> Rs ${slot.hourly_rate}/hr | <i class="fas fa-walking"></i> ${slot.walk_time_minutes} min walk</div>
-                                <button class="reserve-small-btn" onclick="event.stopPropagation(); openReservationModal('${slot.slot_number}')"><i class="fas fa-credit-card"></i> Reserve</button>
-                            </div>
-                        `;
-                    });
-                    container.innerHTML = html;
-                    if (showNotification && data.nearest_slots[0]) {
-                        showToast(`Nearest ${currentVehicle} slot: ${data.nearest_slots[0].slot_number} (${data.nearest_slots[0].distance_meters}m)`, 'success');
-                        const closestSlot = data.nearest_slots[0];
-                        const marker = markerMap.get(closestSlot.slot_number);
-                        if (marker) {
-                            map.flyTo(marker.getLatLng(), 18, { duration: 1.5 });
-                            setTimeout(() => marker.openPopup(), 1500);
-                        }
-                    }
-                    if (data.nearest_slots.length) highlightSlotByNumber(data.nearest_slots[0].slot_number);
-                } else {
-                    container.innerHTML = '<div class="text-center">🚫 No available slots for your vehicle nearby. Try another vehicle type.</div>';
-                    if (showNotification) showToast(`No ${currentVehicle} slots nearby`, 'warning');
-                }
-            } catch(e) {
-                console.error(e);
-                document.getElementById('nearestSlotsList').innerHTML = '<div class="text-center">⚠️ Error fetching nearest slots. Please try again.</div>';
-                if (showNotification) showToast('Error finding nearest slots', 'error');
-            }
-            if (btn) btn.classList.remove('finger-icon');
-        }
+        function toggleDirections() {
+            reservedSlotNumber = reservedSlots[currentVehicle] || null;
+            updateReservedBadge();
 
-        function showDirectionsToSlot(slotNumber) {
-            if (!currentLocation) {
-                showToast('Please allow location first', 'warning');
+            if (!reservedSlotNumber) {
+                showNoReservationMessage();
+                showToast(`No reserved slot found for ${currentVehicle}. Please reserve a slot first.`, 'warning');
                 return;
             }
-            const marker = markerMap.get(slotNumber);
-            if (!marker) {
-                showToast('Slot marker not found', 'error');
-                return;
-            }
-            const targetLatLng = marker.getLatLng();
-            const startLatLng = L.latLng(currentLocation.lat, currentLocation.lng);
 
-            if (routingControl) {
-                map.removeControl(routingControl);
-                routingControl = null;
-            }
-
-            routingControl = L.Routing.control({
-                waypoints: [startLatLng, targetLatLng],
-                routeWhileDragging: false,
-                showAlternatives: false,
-                lineOptions: { styles: [{ color: '#a855f7', weight: 4, opacity: 0.7 }] },
-                createMarker: function() { return null; },
-                show: false,
-                router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' })
-            }).addTo(map);
-
-            routingControl.on('routesfound', function(e) {
-                const routes = e.routes;
-                if (routes.length > 0) {
-                    const steps = routes[0].instructions;
-                    const totalDistance = routes[0].summary.totalDistance;
-                    displaySteps(steps, totalDistance);
-                    const bounds = L.latLngBounds([startLatLng, targetLatLng]);
-                    map.fitBounds(bounds, { padding: [50, 50] });
+            if (routeActive && routingControl) {
+                clearDirections();
+                showToast('Route cleared', 'success');
+            } else {
+                if (!currentLocation) {
+                    showToast('Please get your location first', 'warning');
+                    locateUser();
+                    return;
                 }
-            });
-            showToast('Directions loaded – follow the purple line', 'success');
+                showDirectionsToReservedSlot();
+            }
         }
 
         function showDirectionsToReservedSlot() {
-            if (reservedSlotNumber) {
-                showDirectionsToSlot(reservedSlotNumber);
-            } else {
-                showToast('No reserved slot yet. Reserve a slot first.', 'warning');
+            const marker = markerMap.get(reservedSlotNumber);
+            if (!marker) {
+                showToast('Refreshing map...', 'info');
+                loadParkingData();
+                setTimeout(() => showDirectionsToReservedSlot(), 1500);
+                return;
             }
-        }
-
-        function displaySteps(steps, totalDistance) {
-            const panel = document.getElementById('directionsPanel');
-            const stepsDiv = document.getElementById('stepsList');
-            const remainingDiv = document.getElementById('remainingDistance');
-            stepsDiv.innerHTML = '';
-            steps.forEach((step, idx) => {
-                const stepText = step.text;
-                const distance = step.distance ? `${Math.round(step.distance)} m` : '';
-                stepsDiv.innerHTML += `<div class="step-item">${idx+1}. ${stepText} <span class="distance-left">(${distance})</span></div>`;
+            const targetLatLng = marker.getLatLng(), startLatLng = L.latLng(currentLocation.lat, currentLocation.lng);
+            if (routingControl) { map.removeControl(routingControl); routingControl = null; }
+            showToast('Calculating route...', 'info');
+            routingControl = L.Routing.control({
+                waypoints: [startLatLng, targetLatLng], routeWhileDragging: false, showAlternatives: false,
+                lineOptions: { styles: [{ color: '#2ecc71', weight: 6, opacity: 0.9 }], extendToWaypoints: true },
+                createMarker: function() { return null; }, addWaypoints: false, draggableWaypoints: false,
+                router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' })
+            }).addTo(map);
+            routingControl.on('routesfound', function(e) {
+                const routes = e.routes;
+                if (routes.length > 0) {
+                    routeActive = true;
+                    const route = routes[0], totalDistance = route.summary.totalDistance, totalTime = route.summary.totalTime;
+                    const distanceKm = (totalDistance / 1000).toFixed(2), walkingTime = Math.round(totalDistance / 1.4 / 60), drivingTime = Math.round(totalTime / 60), cyclingTime = Math.round(totalDistance / 250 / 60);
+                    let summaryHtml = `<div class="distance-info"><strong>⭐ To: ${reservedSlotNumber}</strong><br><i class="fas fa-route"></i> <strong>${distanceKm} km</strong><br><i class="fas fa-car"></i> ${drivingTime} min drive &nbsp;|&nbsp;<i class="fas fa-walking"></i> ${walkingTime} min walk &nbsp;|&nbsp;<i class="fas fa-bicycle"></i> ${cyclingTime} min cycle</div>`;
+                    let instructionsHtml = '<div style="margin-top: 8px;"><strong>📋 Directions:</strong></div>';
+                    const instructions = route.instructions;
+                    for (let i = 0; i < instructions.length; i++) {
+                        let text = instructions[i].text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+                        let distance = instructions[i].distance || 0;
+                        let distanceText = distance > 0 ? (distance < 1000 ? Math.round(distance) + 'm' : (distance / 1000).toFixed(1) + 'km') : '';
+                        instructionsHtml += `<div class="instruction"><span class="step-text">${text}</span>${distanceText ? `<span class="step-distance">${distanceText}</span>` : ''}</div>`;
+                    }
+                    document.getElementById('routeInfo').innerHTML = summaryHtml + instructionsHtml;
+                    document.getElementById('directionsPanel').style.display = 'block';
+                    const bounds = L.latLngBounds([startLatLng, targetLatLng]);
+                    map.fitBounds(bounds, { padding: [50, 50] });
+                    showToast(`Route found: ${distanceKm} km, ${drivingTime} min drive`, 'success');
+                }
             });
-            remainingDiv.innerHTML = `<i class="fas fa-route"></i> Total distance: ${Math.round(totalDistance)} m (approx. ${Math.round(totalDistance / 1.4 / 60)} min walk)`;
-            panel.style.display = 'block';
+            routingControl.on('routingerror', function(e) { showToast('Could not find route. Please try again.', 'error'); });
         }
 
-        function hideDirections() {
-            if (routingControl) {
-                map.removeControl(routingControl);
-                routingControl = null;
-            }
+        function clearDirections() {
+            if (routingControl) { map.removeControl(routingControl); routingControl = null; }
             document.getElementById('directionsPanel').style.display = 'none';
+            routeActive = false;
         }
 
         function updateModalPrice() {
             const duration = parseFloat(document.getElementById('modalDurationHours').value);
-            let price = 0;
-            if (currentVehicle === 'Motorcycle') {
-                if (duration >= 5) price = 40;
-                else if (duration <= 0.5) price = 10;
-                else price = 10 + Math.ceil((duration - 0.5) / 0.5) * 5;
-            } else if (currentVehicle === 'EV') {
-                if (duration >= 5) price = 80;
-                else price = 50 + Math.ceil((duration - 1)) * 15;
-            } else {
-                if (duration >= 5) price = 70;
-                else price = 40 + Math.ceil((duration - 1)) * 15;
-            }
-            document.getElementById('modalTotalPrice').innerHTML = `Rs ${price}`;
-        }
-
-        function validateStartTime() { return true; }
-
-        async function sendEmailOTP(email) {
-            if (!validateStartTime()) return false;
-            try {
-                const response = await fetch('/api/initiate-payment/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrftoken
-                    },
-                    body: JSON.stringify({
-                        slot_number: currentReserveSlot,
-                        vehicle_type: currentVehicle,
-                        vehicle_number: document.getElementById('modalVehicleNumber').value.trim(),
-                        duration_hours: parseFloat(document.getElementById('modalDurationHours').value),
-                        start_time: document.getElementById('modalStartTime').value,
-                        payment_method: selectedPaymentMethod,
-                        account_id: email
-                    })
-                });
-                const data = await response.json();
-                if (data.success && data.requires_otp) {
-                    otpSent = true;
-                    showToast(data.message, 'success');
-                    document.getElementById('otpSection').style.display = 'block';
-                    document.getElementById('sendOtpBtn').style.display = 'none';
-                    return true;
-                } else {
-                    showToast(data.error || 'Failed to send OTP', 'error');
-                    return false;
-                }
-            } catch (err) {
-                console.error(err);
-                showToast('Network error. Please try again.', 'error');
-                return false;
-            }
-        }
-
-        async function verifyEmailOTP(email, otp) {
-            if (!validateStartTime()) return false;
-            try {
-                const response = await fetch('/api/initiate-payment/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrftoken
-                    },
-                    body: JSON.stringify({
-                        slot_number: currentReserveSlot,
-                        vehicle_type: currentVehicle,
-                        vehicle_number: document.getElementById('modalVehicleNumber').value.trim(),
-                        duration_hours: parseFloat(document.getElementById('modalDurationHours').value),
-                        start_time: document.getElementById('modalStartTime').value,
-                        payment_method: selectedPaymentMethod,
-                        account_id: email,
-                        otp_code: otp
-                    })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    if (data.form_action) {
-                        const form = document.createElement('form');
-                        form.method = 'POST';
-                        form.action = data.form_action;
-                        for (const [key, value] of Object.entries(data.form_data)) {
-                            const input = document.createElement('input');
-                            input.type = 'hidden';
-                            input.name = key;
-                            input.value = value;
-                            form.appendChild(input);
-                        }
-                        document.body.appendChild(form);
-                        form.submit();
-                    } else if (data.payment_url) {
-                        window.location.href = data.payment_url;
-                    } else if (data.form_action && data.form_action.includes('/map/?payment=success')) {
-                        window.location.href = data.form_action;
-                    } else {
-                        showToast('Invalid response from payment gateway', 'error');
-                    }
-                    return true;
-                } else {
-                    showToast(data.error || 'OTP verification failed', 'error');
-                    return false;
-                }
-            } catch (err) {
-                console.error(err);
-                showToast('Network error. Please try again.', 'error');
-                return false;
-            }
-        }
-
-        async function resendOTP() {
-            if (!currentEmail) return;
-            showToast('Resending OTP...', 'info');
-            await sendEmailOTP(currentEmail);
-        }
-
-        async function initiatePayment() {
-            if (!selectedPaymentMethod) {
-                showToast('Please select a payment method (eSewa or Khalti)', 'warning');
-                return;
-            }
-            const email = document.getElementById('accountId').value.trim();
-            if (!email || !email.includes('@')) {
-                showToast('Please enter a valid email address', 'warning');
-                return;
-            }
-            const vehicleNumber = document.getElementById('modalVehicleNumber').value.trim();
-            if (!vehicleNumber) {
-                showToast('Enter vehicle number', 'warning');
-                return;
-            }
-            currentEmail = email;
-            await sendEmailOTP(email);
-        }
-
-        async function verifyAndPay() {
-            const otp = document.getElementById('otpCode').value.trim();
-            if (!otp || otp.length !== 6) {
-                showToast('Please enter a 6-digit OTP', 'warning');
-                return;
-            }
-            await verifyEmailOTP(currentEmail, otp);
+            const totalPrice = calculatePriceForVehicle(currentVehicle, duration);
+            document.getElementById('modalTotalPrice').innerHTML = `Rs ${totalPrice}`;
         }
 
         function openReservationModal(slotNumber) {
             currentReserveSlot = slotNumber;
             document.getElementById('modalSlotNumber').value = slotNumber;
             document.getElementById('modalVehicleType').value = currentVehicle;
-            document.getElementById('modalVehicleNumber').value = vehicleNumberParam || '';
+
             const defaultStart = new Date();
             defaultStart.setHours(defaultStart.getHours() + 1);
             defaultStart.setMinutes(0);
+            defaultStart.setSeconds(0);
             document.getElementById('modalStartTime').value = defaultStart.toISOString().slice(0, 16);
-            document.getElementById('modalDurationHours').value = durationParam || '2';
+            document.getElementById('modalDurationHours').value = '2';
             updateModalPrice();
+
             selectedPaymentMethod = null;
-            otpSent = false;
             document.querySelectorAll('.payment-option-btn').forEach(btn => btn.classList.remove('selected'));
             document.getElementById('accountIdField').style.display = 'none';
             document.getElementById('otpSection').style.display = 'none';
             document.getElementById('sendOtpBtn').style.display = 'none';
             document.getElementById('accountId').value = '';
             document.getElementById('otpCode').value = '';
+            isProcessing = false;
             modal = new bootstrap.Modal(document.getElementById('reservationModal'));
             modal.show();
         }
@@ -1138,202 +628,144 @@
         function selectPaymentMethod(method) {
             selectedPaymentMethod = method;
             document.querySelectorAll('.payment-option-btn').forEach(btn => btn.classList.remove('selected'));
-            if (method === 'esewa') {
-                document.getElementById('payEsewa').classList.add('selected');
-                document.getElementById('accountLabel').innerText = 'Email Address';
-                document.getElementById('accountId').placeholder = 'e.g., user@example.com';
-            } else if (method === 'khalti') {
-                document.getElementById('payKhalti').classList.add('selected');
-                document.getElementById('accountLabel').innerText = 'Email Address';
-                document.getElementById('accountId').placeholder = 'e.g., user@example.com';
-            }
+            if (method === 'esewa') document.getElementById('payEsewa').classList.add('selected');
+            else if (method === 'khalti') document.getElementById('payKhalti').classList.add('selected');
             document.getElementById('accountIdField').style.display = 'block';
             document.getElementById('sendOtpBtn').style.display = 'inline-block';
             document.getElementById('otpSection').style.display = 'none';
-            document.getElementById('accountId').value = '';
             document.getElementById('otpCode').value = '';
-            otpSent = false;
         }
 
-        async function showInvoice(sessionId) {
+        async function sendOtp() {
+            if (isProcessing) { showToast('Please wait...', 'warning'); return; }
+            const email = document.getElementById('accountId').value.trim();
+            if (!email || !email.includes('@')) { showToast('Valid email required', 'warning'); return; }
+            const vehicleNumber = document.getElementById('modalVehicleNumber').value.trim();
+            if (!vehicleNumber) { showToast('Enter vehicle number', 'warning'); return; }
+            const duration = parseFloat(document.getElementById('modalDurationHours').value);
+            const amount = calculatePriceForVehicle(currentVehicle, duration);
+            currentEmail = email;
+            isProcessing = true; showLoading(true);
             try {
-                const response = await fetch(`/api/invoice/${sessionId}/`);
+                const response = await fetch('/api/initiate-payment/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken }, body: JSON.stringify({ slot_number: currentReserveSlot, vehicle_type: currentVehicle, vehicle_number: vehicleNumber, duration_hours: duration, start_time: document.getElementById('modalStartTime').value, payment_method: selectedPaymentMethod, account_id: email, amount: amount }) });
+                const data = await response.json();
+                showLoading(false); isProcessing = false;
+                if (data.success && data.requires_otp) { showToast('OTP sent to your email', 'success'); document.getElementById('otpSection').style.display = 'block'; document.getElementById('sendOtpBtn').style.display = 'none'; }
+                else { showToast(data.error || 'Failed to send OTP', 'error'); }
+            } catch(e) { showLoading(false); isProcessing = false; showToast('Network error', 'error'); }
+        }
+
+        async function verifyAndPay() {
+            if (isProcessing) { showToast('Payment in progress...', 'warning'); return; }
+            const otp = document.getElementById('otpCode').value.trim();
+            if (!otp || otp.length !== 6) { showToast('Enter 6-digit OTP', 'warning'); return; }
+            const duration = parseFloat(document.getElementById('modalDurationHours').value);
+            const amount = calculatePriceForVehicle(currentVehicle, duration);
+            isProcessing = true; showLoading(true);
+            try {
+                const response = await fetch('/api/initiate-payment/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken }, body: JSON.stringify({ slot_number: currentReserveSlot, vehicle_type: currentVehicle, vehicle_number: document.getElementById('modalVehicleNumber').value.trim(), duration_hours: duration, start_time: document.getElementById('modalStartTime').value, payment_method: selectedPaymentMethod, account_id: currentEmail, otp_code: otp, amount: amount }) });
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('text/html')) { const html = await response.text(); document.write(html); document.close(); return; }
                 const data = await response.json();
                 if (data.success) {
-                    currentInvoiceData = data.invoice;
-                    renderInvoice(currentInvoiceData);
-                    new bootstrap.Modal(document.getElementById('invoiceModal')).show();
-                } else {
-                    showToast('Failed to load invoice', 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showToast('Error loading invoice', 'error');
+                    if (currentReserveSlot) {
+                        reservedSlots[currentVehicle] = currentReserveSlot;
+                        localStorage.setItem('reservedSlots', JSON.stringify(reservedSlots));
+                        reservedSlotNumber = currentReserveSlot;
+                        updateReservedBadge();
+                        showToast(`✅ Slot ${currentReserveSlot} reserved for ${currentVehicle}!`, 'success');
+                    }
+                    if (data.payment_method === 'khalti' && data.payment_url) { window.location.href = data.payment_url; }
+                    else if (data.payment_url) { window.location.href = data.payment_url; }
+                    else if (data.form_action) { const form = document.createElement('form'); form.method = 'POST'; form.action = data.form_action; for (const [key, val] of Object.entries(data.form_data || {})) { const input = document.createElement('input'); input.type = 'hidden'; input.name = key; input.value = val; form.appendChild(input); } document.body.appendChild(form); form.submit(); }
+                    else { showToast('Payment successful!', 'success'); setTimeout(() => { window.location.href = '/map/?payment=success&slot=' + currentReserveSlot; }, 1500); }
+                } else { showLoading(false); isProcessing = false; showToast(data.error || 'Verification failed', 'error'); }
+            } catch(e) { showLoading(false); isProcessing = false; console.error('Payment error:', e); showToast('Network error. Try again.', 'error'); }
+        }
+
+        function startAutoRefresh() { if (refreshInterval) clearInterval(refreshInterval); refreshInterval = setInterval(() => loadParkingData(), 15000); }
+
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'selectedVehicle') {
+                currentVehicle = e.newValue;
+                updateVehicleBadge();
+                loadParkingData();
+                showToast(`Switched to ${currentVehicle}. Showing only compatible slots.`, 'info');
             }
-        }
+        });
 
-        function renderInvoice(inv) {
-            const container = document.getElementById('invoiceContent');
-            container.innerHTML = `
-                <div class="card bg-dark text-white border-success" style="padding: 1.5rem;">
-                    <div class="text-center mb-3">
-                        <i class="fas fa-parking fa-3x text-success"></i>
-                        <h3 class="mt-2">SmartPark Invoice</h3>
-                        <hr class="bg-success">
-                    </div>
-                    <div class="row">
-                        <div class="col-6"><strong>Invoice No:</strong></div>
-                        <div class="col-6">${inv.invoice_no}</div>
-                        <div class="col-6"><strong>Date:</strong></div>
-                        <div class="col-6">${inv.date}</div>
-                        <div class="col-6"><strong>Slot Number:</strong></div>
-                        <div class="col-6">${inv.slot_number}</div>
-                        <div class="col-6"><strong>Zone:</strong></div>
-                        <div class="col-6">${inv.zone_name}</div>
-                        <div class="col-6"><strong>Vehicle Number:</strong></div>
-                        <div class="col-6">${inv.vehicle_number}</div>
-                        <div class="col-6"><strong>Duration:</strong></div>
-                        <div class="col-6">${inv.duration_hours.toFixed(1)} hours</div>
-                        <div class="col-6"><strong>Amount Paid:</strong></div>
-                        <div class="col-6 text-success fw-bold">Rs ${inv.amount}</div>
-                        <div class="col-6"><strong>Payment Method:</strong></div>
-                        <div class="col-6">${inv.payment_method.toUpperCase()}</div>
-                        <div class="col-6"><strong>Transaction ID:</strong></div>
-                        <div class="col-6">${inv.transaction_id}</div>
-                        <div class="col-6"><strong>Status:</strong></div>
-                        <div class="col-6 text-success">${inv.status.toUpperCase()}</div>
-                    </div>
-                    <hr class="bg-success">
-                    <div class="text-center small text-white-50">
-                        Thank you for using SmartPark.<br>
-                        This is a computer-generated invoice.
-                    </div>
-                </div>
-            `;
-        }
-
-        async function takeScreenshot() {
-            const element = document.getElementById('invoiceContent');
-            if (!element) return;
-            try {
-                const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#1e1b4b' });
-                const link = document.createElement('a');
-                link.download = `invoice_${currentInvoiceData?.invoice_no || 'smartpark'}.png`;
-                link.href = canvas.toDataURL();
-                link.click();
-                showToast('Screenshot saved', 'success');
-            } catch (err) {
-                showToast('Failed to capture screenshot', 'error');
+        setInterval(() => {
+            const newVehicle = localStorage.getItem('selectedVehicle');
+            if (newVehicle && newVehicle !== currentVehicle) {
+                currentVehicle = newVehicle;
+                updateVehicleBadge();
+                loadParkingData();
             }
-        }
+        }, 2000);
 
-        async function downloadPDF() {
-            const element = document.getElementById('invoiceContent');
-            if (!element) return;
-            try {
-                const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#1e1b4b' });
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const imgWidth = 190;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-                pdf.save(`invoice_${currentInvoiceData?.invoice_no || 'smartpark'}.pdf`);
-                showToast('PDF downloaded', 'success');
-            } catch (err) {
-                showToast('Failed to generate PDF', 'error');
-            }
-        }
-
-        function updateSlotAfterAllocation(slotNumber, vehicleNumber) {
-            const marker = markerMap.get(slotNumber);
-            if (marker) {
-                marker.setIcon(L.divIcon({
-                    html: `<div style="background:#e74c3c; width:22px; height:22px; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center;"><i class="fas fa-car" style="color:white; font-size:10px;"></i></div>`,
-                    iconSize: [22,22], iconAnchor: [11,11]
-                }));
-                const slotData = allSlotsData.find(s => s.slot_number === slotNumber);
-                if (slotData) {
-                    slotData.status = 'occupied';
-                    updateMarkerPopup(marker, slotData, marker.options.zoneName, marker.options.hourlyRate, vehicleNumber);
-                }
-            }
-        }
-
-        function showToast(msg, type='info', keep = false) {
-            const colors = { success:'#2ecc71', error:'#e74c3c', warning:'#f39c12', info:'#3498db' };
-            const toast = document.createElement('div');
-            toast.className = 'notification-toast';
-            toast.style.cssText = `position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); border-radius:16px; padding:0.8rem 1.2rem; border-left:4px solid ${colors[type]}; z-index:2000; color:white; font-size:0.8rem;`;
-            toast.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle':'fa-info-circle'} me-2"></i> ${msg}<button onclick="this.parentElement.remove()" class="btn-close btn-sm ms-3" style="filter: invert(1);"></button>`;
-            document.body.appendChild(toast);
-            if (!keep) setTimeout(() => toast.remove(), 4000);
-            return toast;
-        }
-
-        function startAutoRefresh() {
-            if (refreshInterval) clearInterval(refreshInterval);
-            refreshInterval = setInterval(() => { loadParkingData(); if (currentLocation) findNearestParkingFromLocation(false); }, 15000);
-        }
-
-        (function checkPaymentResultWithInvoice() {
+        (function checkPaymentResult() {
             const urlParams = new URLSearchParams(window.location.search);
-            const paymentStatus = urlParams.get('payment');
-            const slot = urlParams.get('slot');
-            const sessionId = urlParams.get('session_id');
+            const paymentStatus = urlParams.get('payment'), slot = urlParams.get('slot'), highlightSlot = urlParams.get('highlight'), directionsSlot = urlParams.get('directions');
+
             if (paymentStatus === 'success' && slot) {
-                showToast(`✅ Payment successful! Slot ${slot} reserved.`, 'success');
+                reservedSlots[currentVehicle] = slot;
+                localStorage.setItem('reservedSlots', JSON.stringify(reservedSlots));
                 reservedSlotNumber = slot;
-                localStorage.setItem('reservedSlot', slot);
-                document.getElementById('directionsFab').style.display = 'flex';
-                const marker = markerMap.get(slot);
-                if (marker) {
-                    marker.setIcon(L.divIcon({
-                        html: `<div style="background:#e74c3c; width:22px; height:22px; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center;"><i class="fas fa-car" style="color:white; font-size:10px;"></i></div>`,
-                        iconSize: [22,22], iconAnchor: [11,11]
-                    }));
-                }
-                if (sessionId && sessionId !== 'mock') {
-                    setTimeout(() => showInvoice(sessionId), 1500);
-                } else if (sessionId === 'mock') {
-                    showToast('Mock payment – no invoice available', 'info');
-                }
-                setTimeout(() => loadParkingData(), 2000);
+                showToast(`🎉 Slot ${slot} reserved for ${currentVehicle}!`, 'success');
                 window.history.replaceState({}, document.title, window.location.pathname);
+                updateReservedBadge();
+                loadParkingData();
             } else if (paymentStatus === 'failed') {
-                const reason = urlParams.get('reason') || 'unknown';
-                showToast(`Payment failed: ${reason}`, 'error');
+                showToast(`❌ Payment failed. Please try again.`, 'error');
                 window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            if (highlightSlot) {
+                reservedSlots[currentVehicle] = highlightSlot;
+                localStorage.setItem('reservedSlots', JSON.stringify(reservedSlots));
+                reservedSlotNumber = highlightSlot;
+                updateReservedBadge();
+                showToast(`📍 Showing slot ${highlightSlot} for ${currentVehicle} on map`, 'success');
+                window.history.replaceState({}, document.title, window.location.pathname);
+                loadParkingData();
+                setTimeout(() => { const marker = markerMap.get(highlightSlot); if (marker) { marker.openPopup(); map.setView(marker.getLatLng(), 18); } }, 1500);
+            }
+
+            if (directionsSlot) {
+                reservedSlots[currentVehicle] = directionsSlot;
+                localStorage.setItem('reservedSlots', JSON.stringify(reservedSlots));
+                reservedSlotNumber = directionsSlot;
+                updateReservedBadge();
+                showToast(`📍 Getting directions to slot ${directionsSlot} for ${currentVehicle}`, 'success');
+                window.history.replaceState({}, document.title, window.location.pathname);
+                loadParkingData();
+                if (currentLocation) { setTimeout(() => toggleDirections(), 1500); }
+                else { locateUser(); setTimeout(() => toggleDirections(), 2500); }
+            }
+
+            const stored = localStorage.getItem('reservedSlots');
+            if (stored) {
+                reservedSlots = JSON.parse(stored);
+                reservedSlotNumber = reservedSlots[currentVehicle] || null;
+                updateReservedBadge();
             }
         })();
 
         document.addEventListener('DOMContentLoaded', () => {
-            initMap();
-            loadParkingData();
-            startAutoRefresh();
-            if (!currentLocation) setTimeout(() => locateUser(), 1000);
-            document.getElementById('slotSearchInput').addEventListener('keypress', e => { if(e.key === 'Enter') searchAndHighlightSlot(); });
-            if (vehicleParam) {
-                currentVehicle = vehicleParam;
-                document.querySelectorAll('.vehicle-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                    if (btn.getAttribute('data-vehicle') === vehicleParam) btn.classList.add('active');
-                });
-                document.getElementById('vehicleLabel').innerText = vehicleParam;
-                filterMarkersByVehicle(vehicleParam);
-                if (currentLocation) setTimeout(() => findNearestParkingFromLocation(true), 500);
-            }
-            if (reservedSlotNumber && currentLocation) {
-                document.getElementById('directionsFab').style.display = 'flex';
-                showDirectionsToSlot(reservedSlotNumber);
-            } else if (reservedSlotNumber) {
-                document.getElementById('directionsFab').style.display = 'flex';
-            }
-            document.getElementById('sendOtpBtn').addEventListener('click', initiatePayment);
+            initMap(); loadParkingData(); startAutoRefresh(); updateVehicleBadge(); updateReservedBadge();
+            document.getElementById('sendOtpBtn').addEventListener('click', sendOtp);
             document.getElementById('verifyOtpBtn').addEventListener('click', verifyAndPay);
-            document.getElementById('resendOtpBtn').addEventListener('click', resendOTP);
+            document.getElementById('resendOtpBtn').addEventListener('click', sendOtp);
+            setTimeout(() => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(pos => {
+                        currentLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                        userMarker = L.marker([currentLocation.lat, currentLocation.lng], { icon: L.divIcon({ html: '<div style="background:#4361ee; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow:0 0 0 3px #4361ee;"></div>', iconSize: [16,16] }) }).addTo(map).bindPopup('📍 You are here');
+                        showToast('Location detected!', 'success');
+                    }, () => {});
+                }
+            }, 1500);
         });
     </script>
-    {% endblock %}
 </body>
 </html>

@@ -6,127 +6,128 @@
     <title>My Bookings | SmartPark</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { background: #0f0c29; font-family: 'Inter', sans-serif; color: white; }
-        .navbar { background: rgba(15, 25, 45, 0.8); backdrop-filter: blur(16px); }
-        .navbar-brand { color: white; font-size: 1.3rem; font-weight: bold; }
-        .stat-card { background: rgba(255,255,255,0.08); border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.1); }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: radial-gradient(circle at 20% 30%, #0a0f2a, #02040c); font-family: 'Inter', sans-serif; color: white; min-height: 100vh; }
+        .navbar { background: rgba(15, 25, 45, 0.95); backdrop-filter: blur(16px); padding: 0.6rem 1rem; border-bottom: 1px solid rgba(0,255,255,0.2); }
+        .navbar-brand { color: white !important; font-size: 1.3rem; font-weight: bold; background: linear-gradient(135deg, #fff, #a5f0ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .navbar-brand i { color: #a855f7; margin-right: 6px; }
+        .nav-link { color: rgba(255,255,255,0.9) !important; font-size: 0.9rem; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { color: #a855f7 !important; }
+        .main-container { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+        .page-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem; background: linear-gradient(135deg, #fff, #a855f7); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .stats-summary { display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .summary-card { background: rgba(255,255,255,0.08); backdrop-filter: blur(10px); border-radius: 20px; padding: 1rem 1.5rem; text-align: center; flex: 1; min-width: 120px; border: 1px solid rgba(255,255,255,0.1); transition: transform 0.3s; cursor: pointer; }
+        .summary-card:hover { transform: translateY(-3px); background: rgba(255,255,255,0.12); }
+        .summary-number { font-size: 2rem; font-weight: 800; }
+        .summary-label { font-size: 0.8rem; color: rgba(255,255,255,0.7); }
+        .summary-reserved .summary-number { color: #f39c12; }
+        .summary-active .summary-number { color: #3498db; }
+        .summary-completed .summary-number { color: #2ecc71; }
+        .summary-cancelled .summary-number { color: #e74c3c; }
+        .filter-buttons { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .filter-btn { background: rgba(255,255,255,0.1); border: none; border-radius: 40px; padding: 0.5rem 1.2rem; color: white; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+        .filter-btn.active { background: linear-gradient(135deg, #a855f7, #4cc9f0); }
+        .filter-btn:hover:not(.active) { background: rgba(255,255,255,0.2); }
+        .bookings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1.5rem; }
+        .booking-card { background: rgba(255,255,255,0.08); backdrop-filter: blur(10px); border-radius: 24px; padding: 1.2rem; border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s; position: relative; overflow: hidden; }
+        .booking-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.12); border-color: rgba(168,85,247,0.5); }
+        .booking-card.reserved-card { border-left: 4px solid #f39c12; }
+        .booking-card.active-card { border-left: 4px solid #3498db; }
+        .booking-card.completed-card { border-left: 4px solid #2ecc71; }
+        .booking-card.cancelled-card { border-left: 4px solid #e74c3c; }
+        .booking-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem; }
+        .slot-number { font-size: 1.2rem; font-weight: 700; background: linear-gradient(135deg, #fff, #a855f7); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .status-badge { padding: 0.25rem 0.75rem; border-radius: 40px; font-size: 0.7rem; font-weight: 600; }
         .status-reserved { background: #f39c12; color: #1a1a2e; }
         .status-active { background: #3498db; color: white; }
         .status-completed { background: #2ecc71; color: #1a1a2e; }
         .status-cancelled { background: #e74c3c; color: white; }
-        .btn-cancel { background: #e74c3c; border: none; border-radius: 20px; padding: 0.2rem 1rem; font-size: 0.7rem; color: white; }
-        .btn-cancel:hover { background: #c0392b; }
-        .refresh-btn { position: fixed; bottom: 20px; right: 20px; background: linear-gradient(135deg, #a855f7, #4cc9f0); border: none; border-radius: 50%; width: 55px; height: 55px; color: white; font-size: 1.4rem; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.3); z-index: 1000; transition: 0.3s; }
+        .booking-details { margin-bottom: 1rem; }
+        .detail-row { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.5rem; font-size: 0.85rem; color: rgba(255,255,255,0.8); }
+        .detail-row i { width: 20px; color: #a855f7; }
+        .booking-actions { display: flex; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
+        .btn-map { background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; border-radius: 30px; padding: 0.4rem 1rem; font-size: 0.75rem; font-weight: 600; color: white; cursor: pointer; transition: 0.3s; flex: 1; text-align: center; }
+        .btn-map:hover { transform: scale(1.02); background: linear-gradient(135deg, #27ae60, #219a52); }
+        .btn-cancel { background: #e74c3c; border: none; border-radius: 30px; padding: 0.4rem 1rem; font-size: 0.75rem; font-weight: 600; color: white; cursor: pointer; transition: 0.3s; flex: 1; text-align: center; }
+        .btn-cancel:hover { background: #c0392b; transform: scale(1.02); }
+        .btn-directions { background: linear-gradient(135deg, #f39c12, #e67e22); border: none; border-radius: 30px; padding: 0.4rem 1rem; font-size: 0.75rem; font-weight: 600; color: white; cursor: pointer; transition: 0.3s; flex: 1; text-align: center; }
+        .btn-directions:hover { transform: scale(1.02); }
+        .btn-refund { background: rgba(46,204,113,0.3); border: 1px solid rgba(46,204,113,0.5); border-radius: 30px; padding: 0.4rem 1rem; font-size: 0.7rem; font-weight: 600; color: #2ecc71; cursor: not-allowed; flex: 1; text-align: center; }
+        .empty-state { text-align: center; padding: 4rem; background: rgba(255,255,255,0.05); border-radius: 30px; }
+        .empty-state i { font-size: 4rem; color: #a855f7; margin-bottom: 1rem; }
+        .toast-notification { position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); border-radius: 12px; padding: 12px 20px; color: white; z-index: 10000; border-left: 4px solid; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .refresh-btn { position: fixed; bottom: 20px; left: 20px; background: linear-gradient(135deg, #a855f7, #4cc9f0); border: none; border-radius: 50%; width: 50px; height: 50px; color: white; font-size: 1.2rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1000; transition: 0.3s; }
         .refresh-btn:hover { transform: rotate(180deg); }
+        @media (max-width: 768px) { .main-container { padding: 1rem; } .bookings-grid { grid-template-columns: 1fr; } .stats-summary { flex-wrap: wrap; } .summary-card { min-width: calc(50% - 0.5rem); } .filter-buttons { justify-content: center; } }
     </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="/"><i class="fas fa-parking"></i> SmartPark</a>
-            <div class="collapse navbar-collapse">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/dashboard/">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/my-bookings/">My Bookings</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/logout/">Logout</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/search/">🔍 Find Parking</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/map/">🗺️ Live Map</a></li>
+                    {% if user.is_authenticated %}
+                        <li class="nav-item"><a class="nav-link" href="/dashboard/">Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link active" href="/my-bookings/"><i class="fas fa-bookmark me-1"></i>My Bookings</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/about-us/">About Us</a></li>
+                        {% if user.is_superuser %}
+                            <li class="nav-item"><a class="nav-link" href="/admin/">Admin</a></li>
+                        {% endif %}
+                        <li class="nav-item"><a class="nav-link" href="/logout/">Logout</a></li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="/login/">Login</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/register/">Register</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/about-us/">About Us</a></li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
-    <div class="container py-4">
-        <h2><i class="fas fa-calendar-alt me-2"></i>My Parking Bookings</h2>
-        <div id="bookingsList" class="mt-4">
-            <div class="text-center py-5">Loading...</div>
+
+    <div class="main-container">
+        <h2 class="page-title"><i class="fas fa-bookmark me-2"></i>My Parking Bookings</h2>
+        <div class="stats-summary" id="statsSummary">
+            <div class="summary-card summary-reserved" onclick="filterBookings('reserved')"><div class="summary-number" id="reservedCount">0</div><div class="summary-label"><i class="fas fa-clock"></i> Reserved</div></div>
+            <div class="summary-card summary-active" onclick="filterBookings('active')"><div class="summary-number" id="activeCount">0</div><div class="summary-label"><i class="fas fa-play"></i> Active</div></div>
+            <div class="summary-card summary-completed" onclick="filterBookings('completed')"><div class="summary-number" id="completedCount">0</div><div class="summary-label"><i class="fas fa-check-circle"></i> Completed</div></div>
+            <div class="summary-card summary-cancelled" onclick="filterBookings('cancelled')"><div class="summary-number" id="cancelledCount">0</div><div class="summary-label"><i class="fas fa-times-circle"></i> Cancelled</div></div>
         </div>
+        <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all" onclick="filterBookings('all')">All Bookings</button>
+            <button class="filter-btn" data-filter="reserved" onclick="filterBookings('reserved')"><i class="fas fa-clock"></i> Reserved</button>
+            <button class="filter-btn" data-filter="active" onclick="filterBookings('active')"><i class="fas fa-play"></i> Active</button>
+            <button class="filter-btn" data-filter="completed" onclick="filterBookings('completed')"><i class="fas fa-check"></i> Completed</button>
+            <button class="filter-btn" data-filter="cancelled" onclick="filterBookings('cancelled')"><i class="fas fa-times"></i> Cancelled</button>
+        </div>
+        <div id="bookingsList" class="bookings-grid"><div class="empty-state"><i class="fas fa-spinner fa-pulse"></i><p>Loading your bookings...</p></div></div>
     </div>
-    <button class="refresh-btn" onclick="loadBookings()"><i class="fas fa-sync-alt"></i></button>
+    <button class="refresh-btn" onclick="refreshBookings()" title="Refresh"><i class="fas fa-sync-alt"></i></button>
 
     <script>
-        async function loadBookings() {
-            try {
-                const res = await fetch('/api/dashboard/');
-                const data = await res.json();
-                if (data.success && data.recent_sessions) {
-                    displayBookings(data.recent_sessions);
-                } else {
-                    document.getElementById('bookingsList').innerHTML = '<div class="alert alert-warning">No bookings found.</div>';
-                }
-            } catch(e) {
-                console.error(e);
-                document.getElementById('bookingsList').innerHTML = '<div class="alert alert-danger">Error loading bookings.</div>';
-            }
-        }
-
-        function displayBookings(sessions) {
-            const container = document.getElementById('bookingsList');
-            if (!sessions || sessions.length === 0) {
-                container.innerHTML = '<div class="alert alert-info">You have no parking sessions yet.</div>';
-                return;
-            }
-            let html = '<div class="row">';
-            sessions.forEach(s => {
-                let statusClass = '';
-                let statusText = s.status;
-                if (s.status === 'reserved') { statusClass = 'status-reserved'; statusText = 'Reserved'; }
-                else if (s.status === 'active') { statusClass = 'status-active'; statusText = 'Active'; }
-                else if (s.status === 'completed') { statusClass = 'status-completed'; statusText = 'Completed'; }
-                else if (s.status === 'cancelled') { statusClass = 'status-cancelled'; statusText = 'Cancelled'; }
-                const isFutureReserved = (s.status === 'reserved');
-                html += `
-                    <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="stat-card">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <strong>Slot ${s.slot_number}</strong>
-                                <span class="status-badge ${statusClass}">${statusText}</span>
-                            </div>
-                            <div><i class="fas fa-map-marker-alt"></i> Zone ${s.zone_id}</div>
-                            <div><i class="fas fa-car"></i> Vehicle: ${s.vehicle_number}</div>
-                            <div><i class="fas fa-clock"></i> Start: ${s.start_time}</div>
-                            <div><i class="fas fa-credit-card"></i> Payment: ${s.payment_method.toUpperCase()}</div>
-                            ${isFutureReserved ? `<button class="btn-cancel mt-2" onclick="cancelBooking('${s.session_id}')"><i class="fas fa-times"></i> Cancel Booking</button>` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            container.innerHTML = html;
-        }
-
-        async function cancelBooking(sessionId) {
-            if (!confirm('Are you sure you want to cancel this reservation? The slot will be freed and your payment will be refunded.')) return;
-            try {
-                const res = await fetch(`/api/cancel-session/${sessionId}/`, { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') } });
-                const data = await res.json();
-                if (data.success) {
-                    alert('Booking cancelled and refunded successfully.');
-                    loadBookings();
-                } else {
-                    alert(data.error);
-                }
-            } catch(e) {
-                alert('Error cancelling booking.');
-            }
-        }
-
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-
-        loadBookings();
+        let allBookings = [], currentFilter = 'all', isLoading = false;
+        function getCookie(name) { let value = null; if (document.cookie && document.cookie !== '') { const cookies = document.cookie.split(';'); for (let cookie of cookies) { cookie = cookie.trim(); if (cookie.substring(0, name.length + 1) === (name + '=')) { value = decodeURIComponent(cookie.substring(name.length + 1)); break; } } } return value; }
+        function showToast(msg, type = 'info') { const colors = { success: '#2ecc71', error: '#e74c3c', warning: '#f39c12', info: '#3498db' }; const toast = document.createElement('div'); toast.className = 'toast-notification'; toast.style.borderLeftColor = colors[type]; toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'} me-2"></i> ${msg}<button onclick="this.parentElement.remove()" class="btn-close btn-sm ms-3" style="filter: invert(1);"></button>`; document.body.appendChild(toast); setTimeout(() => toast.remove(), 4000); }
+        async function loadBookings() { if (isLoading) return; isLoading = true; try { const response = await fetch('/api/dashboard/'); const data = await response.json(); if (data.success && data.recent_sessions) { allBookings = data.recent_sessions; updateStats(); displayBookings(allBookings); } else { document.getElementById('bookingsList').innerHTML = '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>No bookings found.</p></div>'; } } catch(e) { document.getElementById('bookingsList').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error loading bookings. Please try again.</p></div>'; showToast('Error loading bookings', 'error'); } finally { isLoading = false; } }
+        function refreshBookings() { showToast('Refreshing bookings...', 'info'); loadBookings(); }
+        function updateStats() { let reserved = 0, active = 0, completed = 0, cancelled = 0; allBookings.forEach(booking => { const status = booking.status?.toLowerCase() || ''; if (status === 'reserved') reserved++; else if (status === 'active') active++; else if (status === 'completed') completed++; else if (status === 'cancelled') cancelled++; }); document.getElementById('reservedCount').textContent = reserved; document.getElementById('activeCount').textContent = active; document.getElementById('completedCount').textContent = completed; document.getElementById('cancelledCount').textContent = cancelled; }
+        function filterBookings(filter) { currentFilter = filter; document.querySelectorAll('.filter-btn').forEach(btn => { btn.classList.remove('active'); if (btn.getAttribute('data-filter') === filter) btn.classList.add('active'); }); document.querySelectorAll('.summary-card').forEach(card => card.style.opacity = '0.7'); if (filter === 'reserved') document.querySelector('.summary-reserved').style.opacity = '1'; else if (filter === 'active') document.querySelector('.summary-active').style.opacity = '1'; else if (filter === 'completed') document.querySelector('.summary-completed').style.opacity = '1'; else if (filter === 'cancelled') document.querySelector('.summary-cancelled').style.opacity = '1'; else document.querySelectorAll('.summary-card').forEach(card => card.style.opacity = '1'); if (filter === 'all') displayBookings(allBookings); else { const filtered = allBookings.filter(booking => booking.status?.toLowerCase() === filter.toLowerCase()); displayBookings(filtered); } }
+        function viewOnMap(slotNumber) { localStorage.setItem('reservedSlot', slotNumber); localStorage.setItem('lastReservedSlot', slotNumber); showToast(`Opening map for slot ${slotNumber}...`, 'success'); window.location.href = `/map/?highlight=${slotNumber}`; }
+        function getDirections(slotNumber) { localStorage.setItem('reservedSlot', slotNumber); localStorage.setItem('lastReservedSlot', slotNumber); showToast(`Getting directions to slot ${slotNumber}...`, 'success'); window.location.href = `/map/?directions=${slotNumber}`; }
+        function formatDateTime(dateTimeStr) { if (!dateTimeStr) return 'N/A'; try { let date = new Date(dateTimeStr); if (isNaN(date.getTime())) { date = new Date(dateTimeStr.replace(' ', 'T')); } if (isNaN(date.getTime())) return dateTimeStr; return date.toLocaleString('en-NP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch(e) { return dateTimeStr; } }
+        async function cancelBooking(sessionId, slotNumber) { const booking = allBookings.find(b => b.session_id === sessionId); const isActive = booking?.status?.toLowerCase() === 'active'; const message = isActive ? `Are you sure you want to end this active session for slot ${slotNumber} early?` : `Are you sure you want to cancel reservation for slot ${slotNumber}?`; if (!confirm(message)) return; showToast('Processing...', 'info'); try { const response = await fetch(`/api/cancel-session/${sessionId}/`, { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' } }); const data = await response.json(); if (data.success) { showToast(`✅ ${isActive ? 'Session ended' : 'Booking cancelled'} for slot ${slotNumber}!`, 'success'); if (localStorage.getItem('reservedSlot') === slotNumber) localStorage.removeItem('reservedSlot'); if (localStorage.getItem('lastReservedSlot') === slotNumber) localStorage.removeItem('lastReservedSlot'); await loadBookings(); } else { showToast(data.error || 'Failed', 'error'); } } catch(e) { showToast('Error', 'error'); } }
+        function displayBookings(bookings) { const container = document.getElementById('bookingsList'); if (!bookings || bookings.length === 0) { let message = currentFilter !== 'all' ? `No ${currentFilter} bookings found.` : 'No bookings found.'; container.innerHTML = `<div class="empty-state"><i class="fas fa-calendar-times"></i><p>${message}</p></div>`; return; } let html = ''; bookings.forEach(booking => { let statusClass = '', statusText = '', cardClass = '', actionButtons = ''; const status = booking.status?.toLowerCase() || ''; const sessionId = booking.session_id; if (status === 'reserved') { statusClass = 'status-reserved'; statusText = 'Reserved'; cardClass = 'reserved-card'; actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-directions" onclick="getDirections('${booking.slot_number}')"><i class="fas fa-directions"></i> Directions</button><button class="btn-cancel" onclick="cancelBooking('${sessionId}', '${booking.slot_number}')"><i class="fas fa-times"></i> Cancel</button>`; } else if (status === 'active') { statusClass = 'status-active'; statusText = 'Active'; cardClass = 'active-card'; actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-directions" onclick="getDirections('${booking.slot_number}')"><i class="fas fa-directions"></i> Directions</button><button class="btn-cancel" onclick="cancelBooking('${sessionId}', '${booking.slot_number}')"><i class="fas fa-times"></i> End Early</button>`; } else if (status === 'completed') { statusClass = 'status-completed'; statusText = 'Completed'; cardClass = 'completed-card'; actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-refund"><i class="fas fa-check"></i> Completed</button>`; } else if (status === 'cancelled') { statusClass = 'status-cancelled'; statusText = 'Cancelled'; cardClass = 'cancelled-card'; actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-refund"><i class="fas fa-history"></i> Refunded</button>`; } else { statusClass = 'status-reserved'; statusText = booking.status || 'Reserved'; cardClass = 'reserved-card'; actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-directions" onclick="getDirections('${booking.slot_number}')"><i class="fas fa-directions"></i> Directions</button>`; } const paymentMethod = booking.payment_method || 'N/A'; const startTime = formatDateTime(booking.start_time); const zoneName = booking.zone_name || `Zone ${booking.zone_id || 'N/A'}`; html += `<div class="booking-card ${cardClass}"><div class="booking-header"><span class="slot-number"><i class="fas fa-parking"></i> Slot ${booking.slot_number}</span><span class="status-badge ${statusClass}">${statusText}</span></div><div class="booking-details"><div class="detail-row"><i class="fas fa-building"></i><span>Zone: ${zoneName}</span></div><div class="detail-row"><i class="fas fa-car"></i><span>Vehicle: ${booking.vehicle_number}</span></div><div class="detail-row"><i class="fas fa-clock"></i><span>Start: ${startTime}</span></div><div class="detail-row"><i class="fas fa-credit-card"></i><span>Payment: ${paymentMethod.toUpperCase()}</span></div></div><div class="booking-actions">${actionButtons}</div></div>`; }); container.innerHTML = html; }
+        let autoRefreshInterval = null;
+        function startAutoRefresh() { if (autoRefreshInterval) clearInterval(autoRefreshInterval); autoRefreshInterval = setInterval(() => { if (!isLoading) loadBookings(); }, 30000); }
+        document.addEventListener('DOMContentLoaded', () => { loadBookings(); startAutoRefresh(); });
     </script>
 </body>
 </html>

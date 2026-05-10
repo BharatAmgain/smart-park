@@ -1,3 +1,8 @@
+"""
+SmartPark Database Initialization Script
+Kathmandu Valley - Complete Parking Zone Coverage (350+ ZONES)
+"""
+
 import os
 import django
 import random
@@ -10,12 +15,16 @@ from django.contrib.auth.models import User
 
 
 def init_database():
-    print("=" * 60)
+    print("=" * 70)
     print("🚗 SMART PARKING SYSTEM - FULL KATHMANDU VALLEY COVERAGE (350+ ZONES)")
-    print("=" * 60)
+    print("=" * 70)
 
+    # Delete existing data
+    print("🗑️ Clearing existing data...")
     ParkingSlot.objects.all().delete()
     ParkingZone.objects.all().delete()
+    print("✅ Existing data cleared")
+    print("")
 
     # ============================================================
     # 150+ ZONES COVERING ALL MUNICIPALITIES OF KATHMANDU DISTRICT
@@ -39,8 +48,8 @@ def init_database():
          'lat': 27.7070, 'lng': 85.3060},
         {'zone_id': 'KMC7', 'name': 'Ratna Park', 'zone_type': 'park', 'capacity': 40, 'hourly_rate': 30,
          'lat': 27.7020, 'lng': 85.3160},
-        {'zone_id': 'KMC8', 'name': 'Tundikhel', 'zone_type': 'park', 'capacity': 60, 'hourly_rate': 25, 'lat': 27.7000,
-         'lng': 85.3100},
+        {'zone_id': 'KMC8', 'name': 'Tundikhel', 'zone_type': 'park', 'capacity': 60, 'hourly_rate': 25,
+         'lat': 27.7000, 'lng': 85.3100},
         {'zone_id': 'KMC9', 'name': 'Singha Durbar', 'zone_type': 'government', 'capacity': 55, 'hourly_rate': 30,
          'lat': 27.6980, 'lng': 85.3200},
         {'zone_id': 'KMC10', 'name': 'Babar Mahal', 'zone_type': 'commercial', 'capacity': 35, 'hourly_rate': 40,
@@ -105,8 +114,8 @@ def init_database():
          'lat': 27.6780, 'lng': 85.3250},
         {'zone_id': 'LMC7', 'name': 'Satdobato', 'zone_type': 'commercial', 'capacity': 40, 'hourly_rate': 35,
          'lat': 27.6700, 'lng': 85.3350},
-        {'zone_id': 'LMC8', 'name': 'Godawari', 'zone_type': 'park', 'capacity': 35, 'hourly_rate': 30, 'lat': 27.6100,
-         'lng': 85.3700},
+        {'zone_id': 'LMC8', 'name': 'Godawari', 'zone_type': 'park', 'capacity': 35, 'hourly_rate': 30,
+         'lat': 27.6100, 'lng': 85.3700},
         {'zone_id': 'LMC9', 'name': 'Khumaltar', 'zone_type': 'commercial', 'capacity': 45, 'hourly_rate': 40,
          'lat': 27.6650, 'lng': 85.3200},
         {'zone_id': 'LMC10', 'name': 'Sanepa', 'zone_type': 'commercial', 'capacity': 35, 'hourly_rate': 40,
@@ -129,8 +138,8 @@ def init_database():
          'lat': 27.6780, 'lng': 85.2850},
         {'zone_id': 'KIR2', 'name': 'TU Kirtipur Campus', 'zone_type': 'educational', 'capacity': 70, 'hourly_rate': 30,
          'lat': 27.6780, 'lng': 85.2800},
-        {'zone_id': 'KIR3', 'name': 'Chobhar', 'zone_type': 'park', 'capacity': 30, 'hourly_rate': 25, 'lat': 27.6600,
-         'lng': 85.2600},
+        {'zone_id': 'KIR3', 'name': 'Chobhar', 'zone_type': 'park', 'capacity': 30, 'hourly_rate': 25,
+         'lat': 27.6600, 'lng': 85.2600},
 
         # ========== HOSPITALS (15) ==========
         {'zone_id': 'HOSP1', 'name': 'Bir Hospital', 'zone_type': 'hospital', 'capacity': 45, 'hourly_rate': 40,
@@ -319,7 +328,7 @@ def init_database():
     # ADDITIONAL MUNICIPALITIES (Tarkeshwor, Budhanilkantha, Gokarneshwor, etc.)
     # ============================================================
     additional_zones = [
-        # ----- TARKESHWOR MUNICIPALITY (Lolang, Jarankhu, Kavresthali, etc.) -----
+        # ----- TARKESHWOR MUNICIPALITY -----
         {'zone_id': 'TAR1', 'name': 'Tarkeshwor Chowk', 'zone_type': 'commercial', 'capacity': 40, 'hourly_rate': 30,
          'lat': 27.7450, 'lng': 85.2800},
         {'zone_id': 'TAR2', 'name': 'Lolang Bazar', 'zone_type': 'commercial', 'capacity': 35, 'hourly_rate': 25,
@@ -340,7 +349,6 @@ def init_database():
          'lat': 27.7800, 'lng': 85.2500},
         {'zone_id': 'TAR10', 'name': 'Bhadrakali Temple', 'zone_type': 'heritage', 'capacity': 25, 'hourly_rate': 30,
          'lat': 27.7460, 'lng': 85.2820},
-        # Additional Tarkeshwor zones
         {'zone_id': 'TAR11', 'name': 'Okhaldhunga', 'zone_type': 'commercial', 'capacity': 25, 'hourly_rate': 25,
          'lat': 27.7520, 'lng': 85.2780},
         {'zone_id': 'TAR12', 'name': 'Gairigaun', 'zone_type': 'commercial', 'capacity': 30, 'hourly_rate': 25,
@@ -485,8 +493,8 @@ def init_database():
          'lat': 27.6750, 'lng': 85.3850},
         {'zone_id': 'THI4', 'name': 'Kaushaltar', 'zone_type': 'commercial', 'capacity': 35, 'hourly_rate': 35,
          'lat': 27.6700, 'lng': 85.3800},
-        {'zone_id': 'THI5', 'name': 'Nagarjun Temple (Thimi)', 'zone_type': 'heritage', 'capacity': 30, 'hourly_rate': 30,
-         'lat': 27.6820, 'lng': 85.3920},
+        {'zone_id': 'THI5', 'name': 'Nagarjun Temple (Thimi)', 'zone_type': 'heritage', 'capacity': 30,
+         'hourly_rate': 30, 'lat': 27.6820, 'lng': 85.3920},
         {'zone_id': 'THI6', 'name': 'Lokanthali (Thimi)', 'zone_type': 'commercial', 'capacity': 35, 'hourly_rate': 30,
          'lat': 27.6850, 'lng': 85.3880},
         {'zone_id': 'THI7', 'name': 'Chardobato', 'zone_type': 'commercial', 'capacity': 30, 'hourly_rate': 30,
@@ -563,8 +571,8 @@ def init_database():
          'lat': 27.6740, 'lng': 85.3260},
         {'zone_id': 'LMC15', 'name': 'Mangal Bazar', 'zone_type': 'heritage', 'capacity': 35, 'hourly_rate': 45,
          'lat': 27.6720, 'lng': 85.3240},
-        {'zone_id': 'LMC16', 'name': 'Sankhamul (Lalitpur)', 'zone_type': 'commercial', 'capacity': 30, 'hourly_rate': 35,
-         'lat': 27.6780, 'lng': 85.3400},
+        {'zone_id': 'LMC16', 'name': 'Sankhamul (Lalitpur)', 'zone_type': 'commercial', 'capacity': 30,
+         'hourly_rate': 35, 'lat': 27.6780, 'lng': 85.3400},
         {'zone_id': 'LMC17', 'name': 'Nakkhu', 'zone_type': 'commercial', 'capacity': 35, 'hourly_rate': 30,
          'lat': 27.6600, 'lng': 85.3500},
         {'zone_id': 'LMC18', 'name': 'Bungamati', 'zone_type': 'heritage', 'capacity': 30, 'hourly_rate': 30,
@@ -625,8 +633,8 @@ def init_database():
          'lat': 27.6850, 'lng': 85.2780},
         {'zone_id': 'KIR6', 'name': 'Layaku', 'zone_type': 'heritage', 'capacity': 25, 'hourly_rate': 30,
          'lat': 27.6770, 'lng': 85.2860},
-        {'zone_id': 'KIR7', 'name': 'Naya Bazaar (Kirtipur)', 'zone_type': 'commercial', 'capacity': 35, 'hourly_rate': 30,
-         'lat': 27.6790, 'lng': 85.2830},
+        {'zone_id': 'KIR7', 'name': 'Naya Bazaar (Kirtipur)', 'zone_type': 'commercial', 'capacity': 35,
+         'hourly_rate': 30, 'lat': 27.6790, 'lng': 85.2830},
 
         # ----- Additional HOSPITALS -----
         {'zone_id': 'HOSP16', 'name': 'Tarkeshwor Hospital', 'zone_type': 'hospital', 'capacity': 30, 'hourly_rate': 30,
@@ -637,14 +645,14 @@ def init_database():
          'lat': 27.7400, 'lng': 85.2600},
         {'zone_id': 'HOSP19', 'name': 'Tokha Hospital', 'zone_type': 'hospital', 'capacity': 35, 'hourly_rate': 30,
          'lat': 27.7550, 'lng': 85.3100},
-        {'zone_id': 'HOSP20', 'name': 'Chandragiri Hospital', 'zone_type': 'hospital', 'capacity': 35, 'hourly_rate': 35,
-         'lat': 27.6800, 'lng': 85.2400},
+        {'zone_id': 'HOSP20', 'name': 'Chandragiri Hospital', 'zone_type': 'hospital', 'capacity': 35,
+         'hourly_rate': 35, 'lat': 27.6800, 'lng': 85.2400},
         {'zone_id': 'HOSP21', 'name': 'Madhyapur Hospital', 'zone_type': 'hospital', 'capacity': 30, 'hourly_rate': 30,
          'lat': 27.6800, 'lng': 85.3900},
-        {'zone_id': 'HOSP22', 'name': 'Budhanilkantha Hospital', 'zone_type': 'hospital', 'capacity': 30, 'hourly_rate': 30,
-         'lat': 27.7600, 'lng': 85.3520},
-        {'zone_id': 'HOSP23', 'name': 'Shankharapur Hospital', 'zone_type': 'hospital', 'capacity': 25, 'hourly_rate': 25,
-         'lat': 27.7620, 'lng': 85.4220},
+        {'zone_id': 'HOSP22', 'name': 'Budhanilkantha Hospital', 'zone_type': 'hospital', 'capacity': 30,
+         'hourly_rate': 30, 'lat': 27.7600, 'lng': 85.3520},
+        {'zone_id': 'HOSP23', 'name': 'Shankharapur Hospital', 'zone_type': 'hospital', 'capacity': 25,
+         'hourly_rate': 25, 'lat': 27.7620, 'lng': 85.4220},
 
         # ----- Additional SHOPPING MALLS -----
         {'zone_id': 'MALL21', 'name': 'Tokha City Center', 'zone_type': 'shopping', 'capacity': 50, 'hourly_rate': 35,
@@ -665,24 +673,24 @@ def init_database():
          'lat': 27.6850, 'lng': 85.3550},
 
         # ----- Additional EDUCATIONAL INSTITUTIONS -----
-        {'zone_id': 'EDU16', 'name': 'Tarkeshwor Academy', 'zone_type': 'educational', 'capacity': 35, 'hourly_rate': 25,
-         'lat': 27.7450, 'lng': 85.2820},
-        {'zone_id': 'EDU17', 'name': 'Budhanilkantha School', 'zone_type': 'educational', 'capacity': 45, 'hourly_rate': 30,
-         'lat': 27.7600, 'lng': 85.3520},
+        {'zone_id': 'EDU16', 'name': 'Tarkeshwor Academy', 'zone_type': 'educational', 'capacity': 35,
+         'hourly_rate': 25, 'lat': 27.7450, 'lng': 85.2820},
+        {'zone_id': 'EDU17', 'name': 'Budhanilkantha School', 'zone_type': 'educational', 'capacity': 45,
+         'hourly_rate': 30, 'lat': 27.7600, 'lng': 85.3520},
         {'zone_id': 'EDU18', 'name': 'Gokarna College', 'zone_type': 'educational', 'capacity': 40, 'hourly_rate': 30,
          'lat': 27.7320, 'lng': 85.3950},
         {'zone_id': 'EDU19', 'name': 'Nagarjun School', 'zone_type': 'educational', 'capacity': 35, 'hourly_rate': 25,
          'lat': 27.7420, 'lng': 85.2620},
         {'zone_id': 'EDU20', 'name': 'Tokha Campus', 'zone_type': 'educational', 'capacity': 40, 'hourly_rate': 25,
          'lat': 27.7580, 'lng': 85.3120},
-        {'zone_id': 'EDU21', 'name': 'Shankharapur College', 'zone_type': 'educational', 'capacity': 30, 'hourly_rate': 25,
-         'lat': 27.7620, 'lng': 85.4240},
+        {'zone_id': 'EDU21', 'name': 'Shankharapur College', 'zone_type': 'educational', 'capacity': 30,
+         'hourly_rate': 25, 'lat': 27.7620, 'lng': 85.4240},
         {'zone_id': 'EDU22', 'name': 'Madhyapur Campus', 'zone_type': 'educational', 'capacity': 35, 'hourly_rate': 25,
          'lat': 27.6820, 'lng': 85.3920},
-        {'zone_id': 'EDU23', 'name': 'Dakshinkali School', 'zone_type': 'educational', 'capacity': 30, 'hourly_rate': 25,
-         'lat': 27.6200, 'lng': 85.2780},
-        {'zone_id': 'EDU24', 'name': 'Chandragiri Academy', 'zone_type': 'educational', 'capacity': 30, 'hourly_rate': 25,
-         'lat': 27.6750, 'lng': 85.2520},
+        {'zone_id': 'EDU23', 'name': 'Dakshinkali School', 'zone_type': 'educational', 'capacity': 30,
+         'hourly_rate': 25, 'lat': 27.6200, 'lng': 85.2780},
+        {'zone_id': 'EDU24', 'name': 'Chandragiri Academy', 'zone_type': 'educational', 'capacity': 30,
+         'hourly_rate': 25, 'lat': 27.6750, 'lng': 85.2520},
 
         # ----- Additional CINEMAS -----
         {'zone_id': 'CINE9', 'name': 'Tokha Cinemas', 'zone_type': 'cinema', 'capacity': 35, 'hourly_rate': 40,
@@ -709,27 +717,27 @@ def init_database():
          'lat': 27.6200, 'lng': 85.2750},
 
         # ----- Additional GOVERNMENT OFFICES -----
-        {'zone_id': 'GOV11', 'name': 'Tarkeshwor Ward Office', 'zone_type': 'government', 'capacity': 25, 'hourly_rate': 20,
-         'lat': 27.7460, 'lng': 85.2810},
-        {'zone_id': 'GOV12', 'name': 'Budhanilkantha Ward Office', 'zone_type': 'government', 'capacity': 30, 'hourly_rate': 20,
-         'lat': 27.7610, 'lng': 85.3510},
-        {'zone_id': 'GOV13', 'name': 'Gokarna Ward Office', 'zone_type': 'government', 'capacity': 30, 'hourly_rate': 20,
-         'lat': 27.7310, 'lng': 85.3960},
+        {'zone_id': 'GOV11', 'name': 'Tarkeshwor Ward Office', 'zone_type': 'government', 'capacity': 25,
+         'hourly_rate': 20, 'lat': 27.7460, 'lng': 85.2810},
+        {'zone_id': 'GOV12', 'name': 'Budhanilkantha Ward Office', 'zone_type': 'government', 'capacity': 30,
+         'hourly_rate': 20, 'lat': 27.7610, 'lng': 85.3510},
+        {'zone_id': 'GOV13', 'name': 'Gokarna Ward Office', 'zone_type': 'government', 'capacity': 30,
+         'hourly_rate': 20, 'lat': 27.7310, 'lng': 85.3960},
         {'zone_id': 'GOV14', 'name': 'Tokha Ward Office', 'zone_type': 'government', 'capacity': 25, 'hourly_rate': 20,
          'lat': 27.7560, 'lng': 85.3110},
-        {'zone_id': 'GOV15', 'name': 'Chandragiri Ward Office', 'zone_type': 'government', 'capacity': 30, 'hourly_rate': 20,
-         'lat': 27.6820, 'lng': 85.2420},
-        {'zone_id': 'GOV16', 'name': 'Shankharapur Ward Office', 'zone_type': 'government', 'capacity': 25, 'hourly_rate': 20,
-         'lat': 27.7600, 'lng': 85.4200},
-        {'zone_id': 'GOV17', 'name': 'Dakshinkali Ward Office', 'zone_type': 'government', 'capacity': 25, 'hourly_rate': 20,
-         'lat': 27.6100, 'lng': 85.2800},
+        {'zone_id': 'GOV15', 'name': 'Chandragiri Ward Office', 'zone_type': 'government', 'capacity': 30,
+         'hourly_rate': 20, 'lat': 27.6820, 'lng': 85.2420},
+        {'zone_id': 'GOV16', 'name': 'Shankharapur Ward Office', 'zone_type': 'government', 'capacity': 25,
+         'hourly_rate': 20, 'lat': 27.7600, 'lng': 85.4200},
+        {'zone_id': 'GOV17', 'name': 'Dakshinkali Ward Office', 'zone_type': 'government', 'capacity': 25,
+         'hourly_rate': 20, 'lat': 27.6100, 'lng': 85.2800},
     ]
 
     # Append additional zones to the main list
     zones_data.extend(additional_zones)
 
     total_zones = len(zones_data)
-    print(f"Creating {total_zones} zones...")
+    print(f"📊 Creating {total_zones} zones...")
 
     zones = []
     for zd in zones_data:
@@ -748,14 +756,17 @@ def init_database():
         zones.append(zone)
 
     print(f"✅ Created {len(zones)} zones")
+    print("")
 
     # Create slots with proper types for vehicle compatibility
     total_slots = 0
     for zone in zones:
+        print(f"📍 Creating slots for {zone.name}...")
+
         for i in range(1, zone.capacity + 1):
             slot_number = f"{zone.zone_id}{i:03d}"
 
-            # Choose slot type based on zone type, but ensure variety for all vehicles
+            # Choose slot type based on zone type
             if zone.zone_type in ['airport', 'shopping', 'commercial']:
                 r = random.random()
                 if r < 0.40:
@@ -823,30 +834,49 @@ def init_database():
 
         zone.occupied = zone.slots.filter(status='occupied').count()
         zone.save()
-        print(f"✅ Created {zone.capacity} slots for {zone.name}")
+        print(f"   ✅ Created {zone.capacity} slots for {zone.name}")
+
+    print("")
 
     # Create admin user
     if not User.objects.filter(username='admin').exists():
         User.objects.create_superuser('admin', 'admin@smartpark.com', 'admin123')
-        print("✅ Admin user: admin / admin123")
+        print("✅ Admin user created: admin / admin123")
+    else:
+        print("ℹ️ Admin user already exists")
 
-    print("\n" + "=" * 60)
+    print("")
+    print("=" * 70)
     print("📊 DATABASE SUMMARY")
-    print("=" * 60)
+    print("=" * 70)
     print(f"Total Zones: {ParkingZone.objects.count()}")
     print(f"Total Slots: {ParkingSlot.objects.count()}")
     print(f"Available Slots: {ParkingSlot.objects.filter(status='available').count()}")
     print(f"Occupied Slots: {ParkingSlot.objects.filter(status='occupied').count()}")
-    print("=" * 60)
+    print("=" * 70)
 
-    print("\n📊 Vehicle Compatibility Summary:")
-    for vehicle, types in [('Sedan', ['Regular', 'Premium']), ('SUV', ['Regular', 'Premium']),
-                           ('Compact', ['Compact', 'Regular']), ('EV', ['EV', 'Regular']),
-                           ('Motorcycle', ['Compact', 'Regular'])]:
+    print("")
+    print("📊 Vehicle Compatibility Summary:")
+    print("-" * 50)
+
+    vehicle_data = [
+        ('Sedan', ['Regular', 'Premium']),
+        ('SUV', ['Regular', 'Premium']),
+        ('Compact', ['Compact', 'Regular']),
+        ('EV', ['EV', 'Regular']),
+        ('Motorcycle', ['Compact', 'Regular']),
+    ]
+
+    for vehicle, types in vehicle_data:
         count = ParkingSlot.objects.filter(status='available', slot_type__in=types).count()
         print(f"✅ {vehicle}: {count} available slots")
 
-    print("\n✅ Initialization Complete! Run 'python manage.py runserver'")
+    print("")
+    print("=" * 70)
+    print("✅ Initialization Complete!")
+    print("Run: python manage.py runserver")
+    print("=" * 70)
+
 
 if __name__ == '__main__':
     init_database()

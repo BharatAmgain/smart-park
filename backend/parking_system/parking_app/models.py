@@ -10,6 +10,11 @@ class ParkingZone(models.Model):
         ('government', 'Government Office'),
         ('cinema', 'Cinema Hall'),
         ('regular', 'Regular Parking'),
+        ('commercial', 'Commercial Area'),
+        ('airport', 'Airport'),
+        ('park', 'Park'),
+        ('office', 'Office Complex'),
+        ('educational', 'Educational Institution'),
     ]
     zone_id = models.CharField(max_length=10, unique=True, primary_key=True)
     name = models.CharField(max_length=100)
@@ -224,4 +229,5 @@ def create_user_profile(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
+    if hasattr(instance, 'profile'):
+        instance.profile.save()

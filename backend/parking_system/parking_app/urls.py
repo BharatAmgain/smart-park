@@ -10,19 +10,18 @@ router.register(r'sessions', views.ParkingSessionViewSet)
 
 urlpatterns = [
     # HTML pages
-    path('', views.intro_page, name='intro'),
-    path('map/', views.home_page, name='map'),
+    path('', views.base_page, name='base'),
+    path('map/', views.map_page, name='map'),
+    path('search/', views.search_page, name='search'),
     path('dashboard/', views.dashboard_page, name='dashboard'),
     path('admin/', views.admin_redirect, name='admin'),
+    path('about-us/', views.about_us_page, name='about_us'),
+    path('my-bookings/', views.my_bookings_page, name='my_bookings'),
 
-    # Authentication pages (standard forms)
+    # Authentication pages
     path('register/', views.register_user, name='register'),
     path('login/', views.login_user, name='login'),
     path('logout/', views.logout_user, name='logout'),
-
-    # My bookings and session cancellation
-    path('my-bookings/', views.my_bookings_page, name='my_bookings'),
-    path('api/cancel-session/<str:session_id>/', views.CancelSessionView.as_view(), name='cancel_session'),
 
     # API endpoints – GET
     path('api/', views.APIHomeView.as_view(), name='api-home'),
@@ -44,8 +43,8 @@ urlpatterns = [
     path('api/payment-failure/', views.PaymentFailureView.as_view(), name='payment-failure'),
     path('api/payment-verify/', csrf_exempt(views.PaymentVerifyView.as_view()), name='payment-verify'),
 
-    # Social authentication (allauth)
-    path('accounts/', include('allauth.urls')),
+    # Cancel session
+    path('api/cancel-session/<str:session_id>/', views.CancelSessionView.as_view(), name='cancel_session'),
 
     # Include DRF router URLs
     path('api/', include(router.urls)),

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us | SmartPark</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 20% 30%, #0a0f2a, #02040c);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(15, 25, 45, 0.95);
+            backdrop-filter: blur(16px);
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid rgba(0,255,255,0.2);
+        }
+        .navbar-brand {
+            color: white !important;
+            font-size: 1.3rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #fff, #a5f0ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .navbar-brand i { color: #a855f7; margin-right: 6px; }
+        .nav-link { color: rgba(255,255,255,0.9) !important; font-size: 0.9rem; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { color: #a855f7 !important; }
+
+        .hero-section {
+            text-align: center;
+            padding: 4rem 1rem;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(0,255,255,0.2);
+        }
+        .hero-title {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .content-card {
+            background: rgba(15, 25, 45, 0.6);
+            backdrop-filter: blur(12px);
+            border-radius: 28px;
+            border: 1px solid rgba(0,255,255,0.2);
+            padding: 2rem;
+            margin: 2rem 0;
+            transition: transform 0.3s;
+        }
+        .content-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0,255,255,0.4);
+        }
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1.2rem;
+            border-left: 4px solid #a855f7;
+            padding-left: 1rem;
+        }
+        .team-icon {
+            font-size: 3rem;
+            color: #a855f7;
+            margin-bottom: 1rem;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .feature-list li i {
+            color: #2ecc71;
+            font-size: 1.1rem;
+            width: 24px;
+        }
+        .footer {
+            background: rgba(0,0,0,0.6);
+            padding: 1.5rem;
+            text-align: center;
+            margin-top: 3rem;
+            border-top: 1px solid rgba(0,255,255,0.2);
+        }
+        @media (max-width: 768px) {
+            .hero-title { font-size: 2rem; }
+            .section-title { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/"><i class="fas fa-parking"></i> SmartPark</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="/search/">🔍 Find Parking</a></li>
+                <li class="nav-item"><a class="nav-link" href="/map/">🗺️ Live Map</a></li>
+                {% if user.is_authenticated %}
+                    <li class="nav-item"><a class="nav-link" href="/my-bookings/">My Bookings</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/dashboard/">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/about-us/">About Us</a></li>
+                    {% if user.is_superuser %}
+                        <li class="nav-item"><a class="nav-link" href="/admin/">Admin</a></li>
+                    {% endif %}
+                    <li class="nav-item"><a class="nav-link" href="/logout/">Logout</a></li>
+                {% else %}
+                    <li class="nav-item"><a class="nav-link" href="/login/">Login</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/register/">Register</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/about-us/">About Us</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="hero-section">
+    <div class="container">
+        <h1 class="hero-title"><i class="fas fa-users me-3"></i>About SmartPark</h1>
+        <p class="lead mt-3">Revolutionizing urban parking with smart technology, real-time availability, and seamless payments.</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="content-card">
+        <h2 class="section-title"><i class="fas fa-bullseye me-2"></i>Our Mission</h2>
+        <p>To eliminate parking frustration by providing a real-time, intelligent parking solution that helps drivers find, reserve, and pay for parking instantly – saving time, reducing congestion, and lowering carbon emissions in Kathmandu Valley.</p>
+    </div>
+
+    <div class="content-card">
+        <h2 class="section-title"><i class="fas fa-eye me-2"></i>Our Vision</h2>
+        <p>A future where urban mobility is seamless, parking is stress-free, and every parking spot is utilized efficiently through data-driven insights.</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="content-card text-center h-100">
+                <i class="fas fa-map-marked-alt team-icon"></i>
+                <h4>Real-time Maps</h4>
+                <p>Live tracking of available slots with turn-by-turn directions.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="content-card text-center h-100">
+                <i class="fas fa-credit-card team-icon"></i>
+                <h4>Multiple Payments</h4>
+                <p>eSewa, Khalti, and card payments – secure and instant.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="content-card text-center h-100">
+                <i class="fas fa-chart-line team-icon"></i>
+                <h4>Smart Analytics</h4>
+                <p>Dashboard with occupancy trends and vehicle compatibility.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-card">
+        <h2 class="section-title"><i class="fas fa-star me-2"></i>Why Choose SmartPark?</h2>
+        <ul class="feature-list">
+            <li><i class="fas fa-check-circle"></i> No more circling – find parking instantly</li>
+            <li><i class="fas fa-check-circle"></i> Reserve slots up to 24 hours in advance</li>
+            <li><i class="fas fa-check-circle"></i> Email OTP verification for secure bookings</li>
+            <li><i class="fas fa-check-circle"></i> Real-time slot status with color-coded markers</li>
+            <li><i class="fas fa-check-circle"></i> Detailed invoices and cancellation with refund</li>
+            <li><i class="fas fa-check-circle"></i> Optimized for all vehicle types: Sedan, SUV, EV, Bike, Truck</li>
+            <li><i class="fas fa-check-circle"></i> Turn-by-turn navigation to your reserved slot</li>
+            <li><i class="fas fa-check-circle"></i> SMS and Email reminders for active sessions</li>
+        </ul>
+    </div>
+
+    <div class="content-card">
+        <h2 class="section-title"><i class="fas fa-map-marker-alt me-2"></i>Our Coverage</h2>
+        <p>SmartPark covers over <strong>500+ parking zones</strong> across the entire Kathmandu Valley including:</p>
+        <div class="row mt-3">
+            <div class="col-md-4">
+                <ul class="feature-list">
+                    <li><i class="fas fa-city"></i> Kathmandu Metropolitan</li>
+                    <li><i class="fas fa-building"></i> Lalitpur Metropolitan</li>
+                    <li><i class="fas fa-landmark"></i> Bhaktapur Municipality</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <ul class="feature-list">
+                    <li><i class="fas fa-university"></i> Kirtipur Municipality</li>
+                    <li><i class="fas fa-tree"></i> Tokha Municipality</li>
+                    <li><i class="fas fa-mountain"></i> Chandragiri Municipality</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <ul class="feature-list">
+                    <li><i class="fas fa-shopping-mall"></i> All major shopping malls</li>
+                    <li><i class="fas fa-hospital"></i> Major hospitals</li>
+                    <li><i class="fas fa-school"></i> Educational institutions</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="footer">
+    <p>&copy; 2025 SmartPark. All rights reserved. | <a href="/about-us/" class="text-white-50">About Us</a> | <a href="#" class="text-white-50">Privacy Policy</a></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
