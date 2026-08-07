@@ -138,6 +138,7 @@
             transition: all 0.3s;
         }
         .slot-card:hover { transform: translateX(5px); background: rgba(255,255,255,0.12); }
+        .slot-price { color: #f39c12; font-weight: bold; margin-top: 0.5rem; font-size: 1rem; }
 
         .zones-grid {
             display: grid;
@@ -335,9 +336,9 @@
                 <button class="reset-btn" onclick="resetSlotTable()">Show All</button>
             </div>
             <div class="table-responsive">
-                <table>
+                <table class="table table-dark table-hover">
                     <thead>
-                        <tr><th>Slot Number</th><th>Zone</th><th>Type</th><th>Status</th><th>Rate (NPR)</th><th>Compatible Vehicles</th></tr>
+                        <tr><th>Slot Number</th><th>Zone</th><th>Type</th><th>Status</th><th>Rate (NPR/hour)</th><th>Compatible Vehicles</th></tr>
                     </thead>
                     <tbody id="allSlotsTable"></tbody>
                 </table>
@@ -347,7 +348,7 @@
         <div class="card-section">
             <h5 class="section-title"><i class="fas fa-history me-2"></i>Recent Parking Sessions</h5>
             <div class="table-responsive">
-                <table>
+                <table class="table table-dark table-hover">
                     <thead>
                         <tr><th>Session ID</th><th>Slot</th><th>Zone</th><th>Vehicle</th><th>Start Time</th><th>Status</th><th>Payment Method</th></tr>
                     </thead>
@@ -444,7 +445,7 @@
                         <div class="row mt-2 small">
                             <div class="col-4"><i class="fas fa-parking text-success"></i> ${zone.available_slots} free</div>
                             <div class="col-4"><i class="fas fa-car text-danger"></i> ${zone.occupied_slots} used</div>
-                            <div class="col-4"><i class="fas fa-rupee-sign text-warning"></i> Rs ${zone.hourly_rate}/hr</div>
+                            <div class="col-4"><i class="fas fa-rupee-sign text-warning"></i> ${zone.display_rate}/hr</div>
                         </div>
                     </div>
                 `;
@@ -507,6 +508,15 @@
 
             let html = '';
             slots.forEach(slot => {
+                // Use price_display from backend if available (already has Rs)
+                // Otherwise format with single Rs
+                let priceText = '';
+                if (slot.price_display) {
+                    priceText = slot.price_display;
+                } else {
+                    priceText = `Rs ${slot.display_rate}/hour`;
+                }
+
                 html += `
                     <div class="slot-card">
                         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -515,7 +525,7 @@
                         </div>
                         <div class="small"><i class="fas fa-building"></i> Zone ${slot.zone_id}</div>
                         <div class="small"><i class="fas fa-tag"></i> Type: ${slot.slot_type}</div>
-                        <div class="mt-2"><i class="fas fa-rupee-sign text-warning"></i> Rs ${slot.hourly_rate}/hour</div>
+                        <div class="slot-price mt-2">${priceText}</div>
                     </div>
                 `;
             });
@@ -575,7 +585,7 @@
                         <td>Zone ${slot.zone_id}</td>
                         <td>${slot.slot_type}</td>
                         <td><span class="status-badge ${statusClass}">${slot.status.toUpperCase()}</span></td>
-                        <td>Rs ${slot.hourly_rate}</td>
+                        <td>Rs ${slot.display_rate}</td>
                         <td><small>${compatible.slice(0, 3).join(', ')}${compatible.length > 3 ? '...' : ''}</small></td>
                     </tr>
                 `;

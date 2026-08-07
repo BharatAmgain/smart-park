@@ -275,22 +275,106 @@
             margin: 0 auto 1rem;
         }
 
+        /* FIXED: All testimonial cards same size */
+        .testimonials-section {
+            padding: 5rem 2rem;
+        }
+
         .testimonial-card {
             background: rgba(255,255,255,0.05);
             border-radius: 20px;
             padding: 1.5rem;
             border: 1px solid rgba(255,255,255,0.1);
+            height: 100%;
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.3s;
+        }
+
+        .testimonial-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(168,85,247,0.3);
         }
 
         .testimonial-text {
             font-style: italic;
             color: rgba(255,255,255,0.8);
             margin-bottom: 1rem;
+            flex: 1;
+            font-size: 0.95rem;
+            line-height: 1.6;
         }
 
         .testimonial-author {
             font-weight: 600;
             color: #a855f7;
+            margin-bottom: 0.3rem;
+        }
+
+        .testimonial-stars {
+            color: #f39c12;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+        }
+
+        /* Contact Us Section */
+        .contact-section {
+            padding: 5rem 2rem;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .contact-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 30px;
+            padding: 2.5rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            max-width: 800px;
+            margin: 0 auto;
+            transition: all 0.3s;
+        }
+
+        .contact-card:hover {
+            border-color: rgba(168,85,247,0.5);
+            background: rgba(255,255,255,0.08);
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            padding: 1rem;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.05);
+            transition: all 0.3s;
+            margin-bottom: 1rem;
+        }
+
+        .contact-item:hover {
+            background: rgba(168,85,247,0.1);
+            transform: translateX(5px);
+        }
+
+        .contact-item i {
+            font-size: 1.8rem;
+            color: #a855f7;
+            width: 50px;
+            text-align: center;
+        }
+
+        .contact-item .contact-label {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .contact-item .contact-value {
+            font-size: 1rem;
+            color: white;
+            font-weight: 500;
         }
 
         .cta-section {
@@ -354,6 +438,9 @@
             .btn-primary-custom, .btn-outline-custom { padding: 0.8rem 1.5rem; font-size: 0.9rem; }
             .stat-number { font-size: 2rem; }
             .section-title { font-size: 1.8rem; }
+            .testimonial-card { min-height: 180px; }
+            .contact-card { padding: 1.5rem; }
+            .contact-item { flex-direction: column; text-align: center; }
         }
     </style>
 </head>
@@ -517,29 +604,88 @@
         </div>
     </div>
 
-    <div class="features-section">
+    <!-- Testimonials Section - All cards same size -->
+    <div class="testimonials-section">
         <div class="container">
             <h2 class="section-title">What Our Users Say</h2>
             <div class="row">
                 <div class="col-md-4 mb-4">
                     <div class="testimonial-card">
                         <p class="testimonial-text">"SmartPark has completely changed my daily commute. I no longer waste time searching for parking!"</p>
-                        <p class="testimonial-author">- Rajesh K., Business Owner</p>
-                        <div class="text-warning">★★★★★</div>
+                        <div>
+                            <p class="testimonial-author">- Rajesh K., Business Owner</p>
+                            <div class="testimonial-stars">★★★★★</div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
                     <div class="testimonial-card">
                         <p class="testimonial-text">"The real-time map and directions feature is amazing. Found a spot instantly!"</p>
-                        <p class="testimonial-author">- Sunita P., IT Professional</p>
-                        <div class="text-warning">★★★★★</div>
+                        <div>
+                            <p class="testimonial-author">- Sunita P., IT Professional</p>
+                            <div class="testimonial-stars">★★★★★</div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
                     <div class="testimonial-card">
                         <p class="testimonial-text">"Easy payments with eSewa and Khalti. Very convenient for daily use."</p>
-                        <p class="testimonial-author">- Bijay M., Student</p>
-                        <div class="text-warning">★★★★★</div>
+                        <div>
+                            <p class="testimonial-author">- Ashish L., Student</p>
+                            <div class="testimonial-stars">★★★★★</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Us Section - Not in navbar -->
+    <div class="contact-section" id="contact">
+        <div class="container">
+            <h2 class="section-title"><i class="fas fa-headset me-2"></i>Contact Us</h2>
+            <div class="contact-card">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="contact-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div>
+                                <div class="contact-label">Address</div>
+                                <div class="contact-value">Kathmandu, Nepal</div>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-envelope"></i>
+                            <div>
+                                <div class="contact-label">Email</div>
+                                <div class="contact-value">info@smartpark.com</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="contact-item">
+                            <i class="fas fa-phone-alt"></i>
+                            <div>
+                                <div class="contact-label">Phone</div>
+                                <div class="contact-value">+977 9866399895</div>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <div class="contact-label">Working Hours</div>
+                                <div class="contact-value">24/7 Support</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-linkedin"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
                     </div>
                 </div>
             </div>
@@ -591,9 +737,9 @@
                 <div class="col-md-3 mb-4">
                     <h5>Support</h5>
                     <ul class="footer-links">
+                        <li><a href="#contact">Contact Us</a></li>
                         <li><a href="#">Help Center</a></li>
                         <li><a href="#">FAQ</a></li>
-                        <li><a href="#">Contact Us</a></li>
                         <li><a href="#">Privacy Policy</a></li>
                     </ul>
                 </div>
@@ -601,7 +747,7 @@
                     <h5>Contact Info</h5>
                     <p class="text-white-50"><i class="fas fa-map-marker-alt me-2"></i>Kathmandu, Nepal</p>
                     <p class="text-white-50"><i class="fas fa-envelope me-2"></i>info@smartpark.com</p>
-                    <p class="text-white-50"><i class="fas fa-phone me-2"></i>+977 9800000000</p>
+                    <p class="text-white-50"><i class="fas fa-phone me-2"></i>+977 9866399895</p>
                 </div>
             </div>
             <hr class="bg-white-50">

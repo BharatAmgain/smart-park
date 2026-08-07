@@ -13,6 +13,29 @@ django.setup()
 from parking_app.models import ParkingZone, ParkingSlot
 from django.contrib.auth.models import User
 
+# ============================================
+# REASONABLE PRICE MAPPING BY ZONE TYPE
+# ============================================
+REASONABLE_PRICES = {
+    'park': 20,
+    'government': 25,
+    'hospital': 30,
+    'educational': 25,
+    'heritage': 35,
+    'commercial': 35,
+    'shopping': 30,
+    'cinema': 30,
+    'office': 35,
+    'airport': 50,
+    'regular': 30,
+    'default': 30
+}
+
+
+def get_reasonable_price(zone_type):
+    """Get reasonable price based on zone type"""
+    return REASONABLE_PRICES.get(zone_type, REASONABLE_PRICES['default'])
+
 
 def init_database():
     print("=" * 70)
@@ -737,16 +760,20 @@ def init_database():
     zones_data.extend(additional_zones)
 
     total_zones = len(zones_data)
-    print(f"📊 Creating {total_zones} zones...")
+    print(f"📊 Creating {total_zones} zones with reasonable prices...")
+    print("")
 
     zones = []
     for zd in zones_data:
+        # Get reasonable price based on zone type (instead of using old hourly_rate)
+        reasonable_price = get_reasonable_price(zd['zone_type'])
+
         zone = ParkingZone.objects.create(
             zone_id=zd['zone_id'],
             name=zd['name'],
             zone_type=zd['zone_type'],
             capacity=zd['capacity'],
-            hourly_rate=zd['hourly_rate'],
+            hourly_rate=reasonable_price,  # ← Using reasonable price instead of old rate
             location_x=zd['lng'],
             location_y=zd['lat'],
             address=f"{zd['name']}, Kathmandu Valley",
@@ -754,14 +781,16 @@ def init_database():
             is_active=True
         )
         zones.append(zone)
+        print(f"   ✅ Created zone: {zone.zone_id} - {zone.name} (Rs {reasonable_price}/hour)")
 
+    print("")
     print(f"✅ Created {len(zones)} zones")
     print("")
 
-    # Create slots with proper types for vehicle compatibility
+    # Create slots for each zone
     total_slots = 0
     for zone in zones:
-        print(f"📍 Creating slots for {zone.name}...")
+        print(f"📍 Creating {zone.capacity} slots for {zone.name} ({zone.zone_id})...")
 
         for i in range(1, zone.capacity + 1):
             slot_number = f"{zone.zone_id}{i:03d}"
@@ -815,7 +844,7 @@ def init_database():
             if i % 10 == 0:
                 slot_type = 'EV'
 
-            # 70% available, 30% occupied
+            # 70% available, 30% occupied for initial demo
             if i <= int(zone.capacity * 0.70):
                 status = 'available'
             else:
@@ -834,7 +863,7 @@ def init_database():
 
         zone.occupied = zone.slots.filter(status='occupied').count()
         zone.save()
-        print(f"   ✅ Created {zone.capacity} slots for {zone.name}")
+        print(f"   ✅ Created {zone.capacity} slots for {zone.name} (Total slots so far: {total_slots})")
 
     print("")
 
@@ -853,6 +882,7 @@ def init_database():
     print(f"Total Slots: {ParkingSlot.objects.count()}")
     print(f"Available Slots: {ParkingSlot.objects.filter(status='available').count()}")
     print(f"Occupied Slots: {ParkingSlot.objects.filter(status='occupied').count()}")
+    print(f"Reserved Slots: {ParkingSlot.objects.filter(status='reserved').count()}")
     print("=" * 70)
 
     print("")
@@ -872,9 +902,26 @@ def init_database():
         print(f"✅ {vehicle}: {count} available slots")
 
     print("")
+    print("📊 Price Summary by Zone Type:")
+    print("-" * 50)
+    for zone_type, price in REASONABLE_PRICES.items():
+        if zone_type != 'default':
+            count = ParkingZone.objects.filter(zone_type=zone_type).count()
+            print(f"  {zone_type.upper()}: Rs {price}/hour ({count} zones)")
+
+    print("")
     print("=" * 70)
     print("✅ Initialization Complete!")
-    print("Run: python manage.py runserver")
+    print("=" * 70)
+    print("")
+    print("🔧 To run the server:")
+    print("   python manage.py runserver")
+    print("")
+    print("🌐 Access the application:")
+    print("   Home: http://localhost:8000/")
+    print("   Dashboard: http://localhost:8000/dashboard/")
+    print("   Live Map: http://localhost:8000/map/")
+    print("   Admin: http://localhost:8000/admin/")
     print("=" * 70)
 
 

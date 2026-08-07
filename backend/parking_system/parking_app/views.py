@@ -58,13 +58,106 @@ KHALTI_TEST_URL = 'https://a.khalti.com/api/v2/epayment/initiate/'
 KHALTI_VERIFY_URL = 'https://a.khalti.com/api/v2/epayment/lookup/'
 
 # ============================================
+# REASONABLE PRICE MAPPING BY ZONE TYPE
+# ============================================
+REASONABLE_PRICES = {
+    'park': 20,
+    'government': 25,
+    'hospital': 30,
+    'educational': 25,
+    'heritage': 35,
+    'commercial': 35,
+    'shopping': 30,
+    'cinema': 30,
+    'office': 35,
+    'airport': 50,
+    'regular': 30,
+    'default': 30
+}
+
+VEHICLE_MULTIPLIER = {
+    'Motorcycle': 0.6,
+    'Bike': 0.6,
+    'Sedan': 1.0,
+    'SUV': 1.0,
+    'Compact': 1.0,
+    'EV': 1.2,
+}
+
+
+def get_reasonable_price(zone_type):
+    """Get reasonable price based on zone type"""
+    return REASONABLE_PRICES.get(zone_type, REASONABLE_PRICES['default'])
+
+
+def calculate_vehicle_rate(zone, vehicle_type):
+    """Calculate per-hour rate based on zone and vehicle type"""
+    base_rate = get_reasonable_price(zone.zone_type)
+    multiplier = VEHICLE_MULTIPLIER.get(vehicle_type, 1.0)
+
+    if vehicle_type in ['Motorcycle', 'Bike', 'motorcycle', 'bike']:
+        return max(15, int(base_rate * 0.6))
+    elif vehicle_type in ['EV', 'ev', 'Electric', 'electric']:
+        return int(base_rate * 1.2)
+    else:
+        return base_rate
+
+
+def calculate_price(vehicle_type, duration_hours, zone):
+    """Calculate total price"""
+    try:
+        duration = float(duration_hours)
+    except:
+        duration = 1.0
+
+    per_hour_rate = calculate_vehicle_rate(zone, vehicle_type)
+    total = per_hour_rate * duration
+
+    # Daily caps
+    if vehicle_type in ['Motorcycle', 'Bike', 'motorcycle', 'bike']:
+        max_daily = 150
+    elif vehicle_type in ['EV', 'ev', 'Electric', 'electric']:
+        max_daily = 300
+    else:
+        max_daily = 250
+
+    total = min(total, max_daily)
+
+    # Long duration discounts
+    if duration >= 8:
+        total = total * 0.70
+    elif duration >= 5:
+        total = total * 0.80
+    elif duration >= 3:
+        total = total * 0.90
+
+    return int(max(20, round(total)))
+
+
+def get_price_display_text(zone, vehicle_type):
+    """Get display text for price"""
+    per_hour_rate = calculate_vehicle_rate(zone, vehicle_type)
+
+    if vehicle_type in ['Motorcycle', 'Bike', 'motorcycle', 'bike']:
+        return f"Rs {per_hour_rate}/hour (Bike rate - 40% off)"
+    elif vehicle_type in ['EV', 'ev', 'Electric', 'electric']:
+        return f"Rs {per_hour_rate}/hour (EV rate - 20% premium)"
+    else:
+        return f"Rs {per_hour_rate}/hour (Standard rate)"
+
+
+def get_display_rate(zone):
+    """Get display rate for dashboard"""
+    return get_reasonable_price(zone.zone_type)
+
+# ============================================
 # REAL-TIME STATUS UPDATE FUNCTION
 # ============================================
 def update_parking_sessions_status():
     """Update session statuses based on current time"""
     now = timezone.now()
 
-    # Update sessions that should become active (start_time <= now)
+    # Update reserved sessions that are starting (start_time <= now)
     starting_sessions = ParkingSession.objects.filter(
         status='reserved',
         start_time__lte=now
@@ -72,16 +165,14 @@ def update_parking_sessions_status():
     for session in starting_sessions:
         session.status = 'active'
         session.save(update_fields=['status', 'updated_at'])
-        # Update the slot status to occupied
         slot = session.slot
         if slot.status != 'occupied':
-            old_status = slot.status
             slot.status = 'occupied'
             slot.save(update_fields=['status', 'last_updated'])
-            print(f"[AUTO] Session {session.session_id} started for slot {slot.slot_number} (was {old_status} → occupied)")
+            print(f"[AUTO] Session {session.session_id} started for slot {slot.slot_number}")
             cache.delete(LIVE_DATA_CACHE_KEY)
 
-    # Update sessions that should become completed (end_time <= now)
+    # Update active sessions that are completing (end_time <= now)
     completing_sessions = ParkingSession.objects.filter(
         status='active',
         end_time__lte=now
@@ -89,17 +180,14 @@ def update_parking_sessions_status():
     for session in completing_sessions:
         session.status = 'completed'
         session.save(update_fields=['status', 'updated_at'])
-        # Free up the slot
         slot = session.slot
         if slot.status == 'occupied':
-            old_status = slot.status
             slot.status = 'available'
             slot.save(update_fields=['status', 'last_updated'])
-            print(f"[AUTO] Session {session.session_id} completed for slot {slot.slot_number} (was {old_status} → available)")
+            print(f"[AUTO] Session {session.session_id} completed for slot {slot.slot_number}")
             cache.delete(LIVE_DATA_CACHE_KEY)
 
 def realtime_status_checker():
-    """Run continuously to check and update statuses"""
     while True:
         time_module.sleep(30)
         try:
@@ -108,7 +196,6 @@ def realtime_status_checker():
             print(f"Status checker error: {e}")
 
 def simulate_realtime_updates():
-    """Simulate random slot changes for demo"""
     while True:
         time_module.sleep(15)
         try:
@@ -126,19 +213,9 @@ def simulate_realtime_updates():
         except Exception as e:
             print(f"Real-time error: {e}")
 
-def update_reserved_to_active():
-    """Legacy function - replaced by realtime_status_checker but kept for compatibility"""
-    while True:
-        time_module.sleep(10)
-        try:
-            update_parking_sessions_status()
-        except Exception as e:
-            print(f"Reservation updater error: {e}")
-
 try:
     threading.Thread(target=realtime_status_checker, daemon=True).start()
     threading.Thread(target=simulate_realtime_updates, daemon=True).start()
-    threading.Thread(target=update_reserved_to_active, daemon=True).start()
     print("✅ Real-time status checker started")
 except:
     pass
@@ -184,7 +261,6 @@ except ImportError:
 # HTML PAGE VIEWS
 # ============================================
 def base_page(request):
-    """Landing page - professional marketing page without map"""
     return render(request, 'base.html')
 
 @login_required(login_url='/login/')
@@ -211,7 +287,6 @@ def admin_redirect(request):
 
 @login_required(login_url='/login/')
 def search_page(request):
-    """Search page - all parking search features"""
     return render(request, 'search.html')
 
 # ============================================
@@ -236,7 +311,6 @@ def register_user(request):
             return render(request, 'register.html', {'error': 'Email already registered.'})
 
         user = User.objects.create_user(username=username, email=email, password=password1)
-        # Ensure profile is created
         if not hasattr(user, 'profile'):
             UserProfile.objects.create(user=user)
         auth_login(request, user)
@@ -290,14 +364,9 @@ def generate_and_send_email_otp(email):
 def verify_email_otp(email, otp):
     email = email.strip().lower()
     stored = cache.get(f"otp_{email}")
-    print(f"[OTP] Verification - Email: {email}, Stored: {stored}, Received: {otp}")
-
     if stored and stored == otp:
         cache.delete(f"otp_{email}")
-        print(f"[OTP] ✅ OTP verified successfully!")
         return True
-
-    print(f"[OTP] ❌ OTP verification failed!")
     return False
 
 # ============================================
@@ -312,10 +381,6 @@ def generate_esewa_signature(total_amount, transaction_uuid, product_code):
         hashlib.sha256
     ).digest()
     signature_b64 = base64.b64encode(signature).decode('utf-8')
-    print("\n" + "="*60)
-    print("[ESEWA] Message:", message)
-    print("[ESEWA] Base64 Signature:", signature_b64)
-    print("="*60 + "\n")
     return signature_b64
 
 def initiate_esewa_payment(amount, product_id, product_name, transaction_uuid):
@@ -336,14 +401,24 @@ def initiate_esewa_payment(amount, product_id, product_name, transaction_uuid):
     return data
 
 def initiate_khalti_payment(amount, product_name, transaction_uuid, return_url):
+    """Initiate Khalti payment with correct amount"""
     headers = {'Authorization': f'Key {KHALTI_SECRET_KEY}', 'Content-Type': 'application/json'}
+
+    # FIXED: Khalti expects amount in paisa (multiply by 100)
+    # But we need to make sure the amount is correct
+    amount_in_paisa = int(amount * 100)
+
     payload = {
         'return_url': return_url,
         'website_url': 'http://localhost:8000',
-        'amount': amount * 100,
+        'amount': amount_in_paisa,
         'purchase_order_id': transaction_uuid,
         'purchase_order_name': product_name,
-        'customer_info': {'name': 'SmartPark User', 'email': 'user@smartpark.com', 'phone': '9800000000'}
+        'customer_info': {
+            'name': 'SmartPark User',
+            'email': 'user@smartpark.com',
+            'phone': '9800000000'
+        }
     }
     try:
         response = requests.post(KHALTI_TEST_URL, json=payload, headers=headers, timeout=30)
@@ -365,49 +440,6 @@ def verify_khalti_payment(pidx):
         return False
 
 USE_MOCK_ESEWA = False
-
-# ============================================
-# HELPER FUNCTIONS
-# ============================================
-def calculate_price(vehicle_type, duration_hours):
-    """Calculate price based on vehicle type and duration"""
-    try:
-        duration = float(duration_hours)
-    except:
-        duration = 1.0
-
-    if vehicle_type in ['Motorcycle', 'Bike']:
-        # Bike pricing: Rs 10 per hour, max Rs 50
-        if duration >= 5:
-            return 40
-        elif duration <= 0.5:
-            return 10
-        else:
-            # Rs 10 for first 0.5 hours, then Rs 5 per additional 0.5 hour
-            extra_half_hours = max(0, (duration - 0.5) / 0.5)
-            return 10 + int(extra_half_hours) * 5
-    elif vehicle_type == 'EV':
-        # EV pricing: Rs 20 per hour, max Rs 100
-        if duration >= 5:
-            return 80
-        else:
-            return 20 + int(duration - 1) * 15
-    elif vehicle_type in ['Compact', 'Sedan', 'SUV']:
-        # Car pricing: Rs 15 per hour, max Rs 75
-        if duration >= 5:
-            return 70
-        else:
-            return 15 + int(duration - 1) * 15
-    else:
-        # Default car pricing
-        if duration >= 5:
-            return 70
-        else:
-            return 15 + int(duration - 1) * 15
-
-def get_current_timezone():
-    """Get current timezone aware datetime"""
-    return timezone.now()
 
 # ============================================
 # API VIEWS
@@ -440,14 +472,19 @@ class ParkingSlotViewSet(viewsets.ModelViewSet):
         }
         compatible = compatibility.get(vehicle_type, ['Regular'])
         slots = ParkingSlot.objects.filter(status='available', slot_type__in=compatible).select_related('zone')
-        slots_data = [{
-            'slot_number': s.slot_number,
-            'zone_id': s.zone.zone_id,
-            'zone_name': s.zone.name,
-            'slot_type': s.slot_type,
-            'status': s.status,
-            'hourly_rate': float(s.zone.hourly_rate)
-        } for s in slots]
+        slots_data = []
+        for slot in slots:
+            price_display = get_price_display_text(slot.zone, vehicle_type)
+            slots_data.append({
+                'slot_number': slot.slot_number,
+                'zone_id': slot.zone.zone_id,
+                'zone_name': slot.zone.name,
+                'slot_type': slot.slot_type,
+                'status': slot.status,
+                'display_rate': get_display_rate(slot.zone),
+                'vehicle_rate': calculate_vehicle_rate(slot.zone, vehicle_type),
+                'price_display': price_display
+            })
         return Response({'success': True, 'vehicle_type': vehicle_type, 'total_available': len(slots_data), 'slots': slots_data})
 
     @action(detail=False, methods=['get'])
@@ -477,10 +514,25 @@ class ParkingSessionViewSet(viewsets.ModelViewSet):
         sessions = ParkingSession.objects.filter(status='active')
         return Response(self.get_serializer(sessions, many=True).data)
 
+    @action(detail=False, methods=['get'])
+    def reserved(self, request):
+        sessions = ParkingSession.objects.filter(status='reserved')
+        return Response(self.get_serializer(sessions, many=True).data)
+
+    @action(detail=False, methods=['get'])
+    def completed(self, request):
+        sessions = ParkingSession.objects.filter(status='completed')
+        return Response(self.get_serializer(sessions, many=True).data)
+
+    @action(detail=False, methods=['get'])
+    def cancelled(self, request):
+        sessions = ParkingSession.objects.filter(status='cancelled')
+        return Response(self.get_serializer(sessions, many=True).data)
+
 class LiveParkingView(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
-        # Update statuses before sending response
+        # Update session statuses before returning data
         update_parking_sessions_status()
 
         cached_data = cache.get(LIVE_DATA_CACHE_KEY)
@@ -490,10 +542,19 @@ class LiveParkingView(APIView):
             now = timezone.now()
             zones = ParkingZone.objects.filter(is_active=True)
 
+            # Get accurate counts from database
             total_slots = ParkingSlot.objects.count()
+
+            # Count slots by status - these are the actual slot statuses
             total_available = ParkingSlot.objects.filter(status='available').count()
             total_occupied = ParkingSlot.objects.filter(status='occupied').count()
             total_reserved = ParkingSlot.objects.filter(status='reserved').count()
+
+            # Get session counts - these show the actual session statuses
+            active_sessions_count = ParkingSession.objects.filter(status='active').count()
+            reserved_sessions_count = ParkingSession.objects.filter(status='reserved').count()
+            completed_sessions_count = ParkingSession.objects.filter(status='completed').count()
+            cancelled_sessions_count = ParkingSession.objects.filter(status='cancelled').count()
 
             if not zones.exists():
                 response_data = {
@@ -503,7 +564,11 @@ class LiveParkingView(APIView):
                         'total_available': total_available,
                         'total_occupied': total_occupied,
                         'total_reserved': total_reserved,
-                        'total_slots': total_slots
+                        'total_slots': total_slots,
+                        'active_sessions': active_sessions_count,
+                        'reserved_sessions': reserved_sessions_count,
+                        'completed_sessions': completed_sessions_count,
+                        'cancelled_sessions': cancelled_sessions_count
                     }
                 }
                 cache.set(LIVE_DATA_CACHE_KEY, response_data, CACHE_TIMEOUT)
@@ -512,7 +577,7 @@ class LiveParkingView(APIView):
             future_slot_pks = set(
                 ParkingSession.objects.filter(
                     start_time__gt=now,
-                    status__in=['reserved', 'active']
+                    status__in=['reserved']
                 ).values_list('slot_id', flat=True)
             )
 
@@ -536,19 +601,13 @@ class LiveParkingView(APIView):
                         occupied += 1
                     else:
                         effective = slot.status
-                        if effective == 'available':
-                            available += 1
-                        elif effective == 'occupied':
-                            occupied += 1
-                        else:
-                            reserved += 1
 
                     slots_data.append({
                         'slot_number': slot.slot_number,
                         'status': effective,
                         'slot_type': slot.slot_type,
                         'zone_name': zone.name,
-                        'hourly_rate': float(zone.hourly_rate)
+                        'display_rate': get_display_rate(zone)
                     })
 
                 lat = zone.location_y or 27.7172
@@ -561,7 +620,7 @@ class LiveParkingView(APIView):
                     'reserved_slots': reserved,
                     'total_slots': zone.capacity,
                     'availability_percentage': round((available / zone.capacity * 100), 1) if zone.capacity else 0,
-                    'hourly_rate': float(zone.hourly_rate),
+                    'display_rate': get_display_rate(zone),
                     'coordinates': {'lat': float(lat), 'lng': float(lng)},
                     'slots': slots_data
                 })
@@ -573,7 +632,11 @@ class LiveParkingView(APIView):
                     'total_available': total_available,
                     'total_occupied': total_occupied,
                     'total_reserved': total_reserved,
-                    'total_slots': total_slots
+                    'total_slots': total_slots,
+                    'active_sessions': active_sessions_count,
+                    'reserved_sessions': reserved_sessions_count,
+                    'completed_sessions': completed_sessions_count,
+                    'cancelled_sessions': cancelled_sessions_count
                 }
             }
             cache.set(LIVE_DATA_CACHE_KEY, response_data, CACHE_TIMEOUT)
@@ -586,6 +649,10 @@ class LiveParkingView(APIView):
             total_available = ParkingSlot.objects.filter(status='available').count()
             total_occupied = ParkingSlot.objects.filter(status='occupied').count()
             total_reserved = ParkingSlot.objects.filter(status='reserved').count()
+            active_sessions_count = ParkingSession.objects.filter(status='active').count()
+            reserved_sessions_count = ParkingSession.objects.filter(status='reserved').count()
+            completed_sessions_count = ParkingSession.objects.filter(status='completed').count()
+            cancelled_sessions_count = ParkingSession.objects.filter(status='cancelled').count()
             return Response({
                 'success': True,
                 'zones': [],
@@ -593,7 +660,11 @@ class LiveParkingView(APIView):
                     'total_available': total_available,
                     'total_occupied': total_occupied,
                     'total_reserved': total_reserved,
-                    'total_slots': total_slots
+                    'total_slots': total_slots,
+                    'active_sessions': active_sessions_count,
+                    'reserved_sessions': reserved_sessions_count,
+                    'completed_sessions': completed_sessions_count,
+                    'cancelled_sessions': cancelled_sessions_count
                 }
             })
 
@@ -602,16 +673,13 @@ class NearestParkingView(APIView):
     permission_classes = [AllowAny]
 
     def haversine(self, lat1, lon1, lat2, lon2):
-        """Calculate distance between two points in meters"""
-        R = 6371000
+        R = 6371000  # Earth's radius in meters
         phi1 = math.radians(lat1)
         phi2 = math.radians(lat2)
         dphi = math.radians(lat2 - lat1)
         dlambda = math.radians(lon2 - lon1)
-
         a = math.sin(dphi/2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda/2)**2
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-
         return R * c
 
     def post(self, request):
@@ -620,12 +688,16 @@ class NearestParkingView(APIView):
         vehicle_type = request.data.get('vehicle_type', 'Sedan')
         limit = request.data.get('limit', 10)
 
+        # FIXED: Set a maximum radius of 3km for nearest parking
+        max_distance = request.data.get('max_distance', 3000)  # 3km default
+
         if not user_lat or not user_lng:
             return Response({'error': 'Location required'}, status=400)
 
         try:
             user_lat = float(user_lat)
             user_lng = float(user_lng)
+            max_distance = float(max_distance)
 
             compatibility = {
                 'Sedan': ['Regular', 'Premium'],
@@ -638,45 +710,69 @@ class NearestParkingView(APIView):
 
             compatible_types = compatibility.get(vehicle_type, ['Regular'])
 
+            # FIXED: Get all available slots with their zone coordinates
             all_slots = ParkingSlot.objects.filter(
                 status='available',
                 slot_type__in=compatible_types
             ).select_related('zone')
 
             nearest = []
+
             for slot in all_slots:
                 zone = slot.zone
                 if zone.location_x and zone.location_y:
                     slot_lat = float(zone.location_y)
                     slot_lng = float(zone.location_x)
-
                     distance = self.haversine(user_lat, user_lng, slot_lat, slot_lng)
 
-                    walk_time_min = int(distance / 1.4 / 60)
-                    drive_time_min = int(distance / 8.33 / 60)
-                    bike_time_min = int(distance / 4.16 / 60)
+                    # FIXED: Only include slots within max_distance
+                    if distance <= max_distance:
+                        # Calculate times
+                        walk_time_min = max(1, int(distance / 1.4 / 60))
+                        drive_time_min = max(1, int(distance / 8.33 / 60))
+                        bike_time_min = max(1, int(distance / 4.16 / 60))
 
-                    nearest.append({
-                        'slot_number': slot.slot_number,
-                        'zone_id': zone.zone_id,
-                        'zone_name': zone.name,
-                        'slot_type': slot.slot_type,
-                        'distance_meters': round(distance, 2),
-                        'distance_km': round(distance / 1000, 2),
-                        'walk_time_minutes': walk_time_min,
-                        'drive_time_minutes': drive_time_min,
-                        'bike_time_minutes': bike_time_min,
-                        'hourly_rate': float(zone.hourly_rate),
-                    })
+                        per_hour_rate = calculate_vehicle_rate(zone, vehicle_type)
+                        price_display = get_price_display_text(zone, vehicle_type)
 
+                        nearest.append({
+                            'slot_number': slot.slot_number,
+                            'zone_id': zone.zone_id,
+                            'zone_name': zone.name,
+                            'slot_type': slot.slot_type,
+                            'distance_meters': round(distance, 2),
+                            'distance_km': round(distance / 1000, 2),
+                            'walk_time_minutes': walk_time_min,
+                            'drive_time_minutes': drive_time_min,
+                            'bike_time_minutes': bike_time_min,
+                            'hourly_rate': get_display_rate(zone),
+                            'per_hour_rate': per_hour_rate,
+                            'price_display': price_display,
+                            'zone_type': zone.zone_type
+                        })
+
+            # Sort by distance (nearest first)
             nearest.sort(key=lambda x: x['distance_meters'])
+
+            # Limit results
             result_slots = nearest[:limit]
+
+            # FIXED: Return appropriate message if no slots found
+            if len(result_slots) == 0:
+                return Response({
+                    'success': True,
+                    'nearest_slots': [],
+                    'vehicle_type': vehicle_type,
+                    'total_found': 0,
+                    'message': f'No available {vehicle_type} slots within {max_distance/1000}km of your location. Try increasing the search radius.'
+                })
 
             return Response({
                 'success': True,
                 'nearest_slots': result_slots,
                 'vehicle_type': vehicle_type,
-                'total_found': len(nearest)
+                'total_found': len(nearest),
+                'max_distance_km': round(max_distance / 1000, 1)
             })
 
         except Exception as e:
@@ -708,6 +804,7 @@ class AllocationView(APIView):
         if not slot_number or not vehicle_number:
             return Response({'error': 'Slot number and vehicle number required'}, status=400)
 
+        # Parse start time
         if start_time_str:
             try:
                 start_time = timezone.make_aware(datetime.fromisoformat(start_time_str))
@@ -716,10 +813,12 @@ class AllocationView(APIView):
         else:
             start_time = timezone.now()
 
-        end_time = start_time + timedelta(hours=duration_hours)
+        # Prevent booking for past dates
+        now = timezone.now()
+        if start_time < now:
+            return Response({'error': 'Cannot book for past date and time. Please select a future date/time.'}, status=400)
 
-        if ParkingSession.objects.filter(vehicle_number=vehicle_number, status__in=['active', 'reserved'], start_time__lt=end_time, end_time__gt=start_time).exists():
-            return Response({'error': 'Vehicle already has active/reserved session'}, status=400)
+        end_time = start_time + timedelta(hours=duration_hours)
 
         try:
             slot = ParkingSlot.objects.get(slot_number=slot_number)
@@ -733,15 +832,14 @@ class AllocationView(APIView):
         if slot.slot_type not in compatible:
             return Response({'error': f'Slot type not compatible with {vehicle_type}'}, status=400)
 
-        amount = calculate_price(vehicle_type, duration_hours)
-        now = timezone.now()
+        amount = calculate_price(vehicle_type, duration_hours, slot.zone)
 
-        if start_time <= now:
-            session_status = 'active'
-            slot_status = 'occupied'
-        else:
+        if start_time > now:
             session_status = 'reserved'
             slot_status = 'reserved'
+        else:
+            session_status = 'active'
+            slot_status = 'occupied'
 
         slot.status = slot_status
         slot.save()
@@ -765,13 +863,17 @@ class AllocationView(APIView):
             payment_date=timezone.now()
         )
 
+        cache.delete(LIVE_DATA_CACHE_KEY)
+
         return Response({
             'success': True,
             'message': f'Slot {slot_number} reserved. Paid Rs {amount} via {payment_method}',
             'amount': amount,
             'slot_number': slot_number,
             'session_id': str(session.session_id),
-            'status': session_status
+            'status': session_status,
+            'start_time': start_time.isoformat(),
+            'end_time': end_time.isoformat()
         })
 
 class ReservationView(AllocationView):
@@ -801,7 +903,8 @@ class InitiatePaymentView(APIView):
         except ParkingSlot.DoesNotExist:
             return Response({'error': 'Invalid slot'}, status=404)
 
-        amount = calculate_price(vehicle_type, duration_hours)
+        # FIXED: Calculate the correct amount
+        amount = calculate_price(vehicle_type, duration_hours, slot.zone)
         transaction_uuid = f"PARK_{uuid.uuid4().hex[:12].upper()}"
 
         PendingReservation.objects.create(
@@ -813,7 +916,7 @@ class InitiatePaymentView(APIView):
             start_time=start_time_str or None,
             payment_method=payment_method,
             account_id=account_id,
-            amount=amount,
+            amount=amount,  # Store the correct amount
         )
 
         if not otp_code:
@@ -830,21 +933,29 @@ class InitiatePaymentView(APIView):
                             slot = ParkingSlot.objects.get(slot_number=slot_number)
                             if slot.status != 'available':
                                 return Response({'error': 'Slot not available'}, status=400)
+
                             if start_time_str:
                                 try:
-                                    start_time_dt = timezone.make_aware(datetime.fromisoformat(start_time_str))
+                                    start_time_dt = datetime.fromisoformat(start_time_str)
+                                    start_time_dt = timezone.make_aware(start_time_dt)
                                 except:
                                     start_time_dt = timezone.now()
                             else:
                                 start_time_dt = timezone.now()
-                            end_time_dt = start_time_dt + timedelta(hours=duration_hours)
+
                             now = timezone.now()
-                            if start_time_dt <= now:
-                                session_status = 'active'
-                                slot_status = 'occupied'
-                            else:
+                            if start_time_dt < now:
+                                return Response({'error': 'Cannot book for past date and time.'}, status=400)
+
+                            end_time_dt = start_time_dt + timedelta(hours=duration_hours)
+
+                            if start_time_dt > now:
                                 session_status = 'reserved'
                                 slot_status = 'reserved'
+                            else:
+                                session_status = 'active'
+                                slot_status = 'occupied'
+
                             slot.status = slot_status
                             slot.save()
                             user_profile = request.user.profile if request.user.is_authenticated else None
@@ -865,6 +976,7 @@ class InitiatePaymentView(APIView):
                                 payment_date=timezone.now()
                             )
                             PendingReservation.objects.filter(transaction_uuid=transaction_uuid).delete()
+                            cache.delete(LIVE_DATA_CACHE_KEY)
                             return Response({
                                 'success': True,
                                 'payment_method': 'esewa',
@@ -879,14 +991,8 @@ class InitiatePaymentView(APIView):
                         html_content = f'''
                         <!DOCTYPE html>
                         <html>
-                        <head>
-                            <title>Redirecting to eSewa...</title>
-                            <style>
-                                body {{ margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #0a0f2a, #02040c); font-family: Arial, sans-serif; }}
-                                .container {{ text-align: center; color: white; }}
-                                .spinner {{ width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #2ecc71; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }}
-                                @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
-                            </style>
+                        <head><title>Redirecting to eSewa...</title>
+                        <style>body{{margin:0;padding:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:linear-gradient(135deg,#0a0f2a,#02040c);font-family:Arial,sans-serif;}}.container{{text-align:center;color:white;}}.spinner{{width:50px;height:50px;border:4px solid rgba(255,255,255,0.3);border-top:4px solid #2ecc71;border-radius:50%;animation:spin 1s linear infinite;margin:20px auto;}}@keyframes spin{{0%{{transform:rotate(0deg);}}100%{{transform:rotate(360deg);}}}}</style>
                         </head>
                         <body>
                             <div class="container">
@@ -900,21 +1006,22 @@ class InitiatePaymentView(APIView):
                             html_content += f'<input type="hidden" name="{key}" value="{value}">'
                         html_content += '''
                             </form>
-                            <script>
-                                if (!window.formSubmitted) {
-                                    window.formSubmitted = true;
-                                    document.getElementById('esewaForm').submit();
-                                }
-                            </script>
+                            <script>document.getElementById('esewaForm').submit();</script>
                         </body>
                         </html>
                         '''
                         return HttpResponse(html_content)
                 elif payment_method == 'khalti':
+                    # FIXED: Pass the correct amount to Khalti
                     return_url = f"{ESEWA_SUCCESS_URL}?method=khalti&txn_id={transaction_uuid}"
                     payment_url = initiate_khalti_payment(amount, f"Parking {slot_number}", transaction_uuid, return_url)
                     if payment_url:
-                        return Response({'success': True, 'payment_method': 'khalti', 'payment_url': payment_url})
+                        return Response({
+                            'success': True,
+                            'payment_method': 'khalti',
+                            'payment_url': payment_url,
+                            'amount': amount  # Return the amount for display
+                        })
                     else:
                         return Response({'error': 'Khalti initiation failed'}, status=500)
                 return Response({'error': 'Invalid payment method'}, status=400)
@@ -950,21 +1057,28 @@ class PaymentSuccessView(APIView):
 
             if pending.start_time:
                 try:
-                    start_time = timezone.make_aware(datetime.fromisoformat(pending.start_time))
+                    if isinstance(pending.start_time, str):
+                        start_time = datetime.fromisoformat(pending.start_time)
+                        start_time = timezone.make_aware(start_time)
+                    else:
+                        start_time = pending.start_time
                 except:
                     start_time = timezone.now()
             else:
                 start_time = timezone.now()
 
-            end_time = start_time + timedelta(hours=float(pending.duration_hours))
             now = timezone.now()
+            if start_time < now:
+                return HttpResponseRedirect("/map/?payment=failed&reason=past_date_not_allowed")
 
-            if start_time <= now:
-                session_status = 'active'
-                slot_status = 'occupied'
-            else:
+            end_time = start_time + timedelta(hours=float(pending.duration_hours))
+
+            if start_time > now:
                 session_status = 'reserved'
                 slot_status = 'reserved'
+            else:
+                session_status = 'active'
+                slot_status = 'occupied'
 
             slot.status = slot_status
             slot.save()
@@ -987,6 +1101,7 @@ class PaymentSuccessView(APIView):
             )
 
             pending.delete()
+            cache.delete(LIVE_DATA_CACHE_KEY)
             return HttpResponseRedirect(f"/map/?payment=success&slot={pending.slot_number}&session_id={session.session_id}")
 
         except Exception as e:
@@ -1026,44 +1141,45 @@ class CancelSessionView(APIView):
 
             now = timezone.now()
 
-            # For active sessions, allow early ending
             if session.status == 'active':
-                # End the session early
                 session.status = 'completed'
                 session.actual_end_time = now
                 session.save()
-                # Free up the slot
                 slot = session.slot
                 slot.status = 'available'
                 slot.save()
-                # Calculate refund for unused time
-                remaining_time = (session.end_time - now).total_seconds() / 3600
-                if remaining_time > 0:
-                    payment = Payment.objects.filter(session=session).first()
-                    if payment:
-                        payment.status = 'refunded'
-                        payment.save()
+                cache.delete(LIVE_DATA_CACHE_KEY)
                 return JsonResponse({'success': True, 'message': 'Session ended successfully'})
 
-            # For reserved sessions (future), cancel normally
-            if session.start_time <= now:
-                return JsonResponse({'success': False, 'error': 'Cannot cancel active/past session'})
+            if session.start_time <= now and session.status == 'reserved':
+                slot = session.slot
+                slot.status = 'available'
+                slot.save()
+                session.status = 'cancelled'
+                session.save()
+                payment = Payment.objects.filter(session=session).first()
+                if payment and payment.status == 'completed':
+                    payment.status = 'refunded'
+                    payment.save()
+                cache.delete(LIVE_DATA_CACHE_KEY)
+                return JsonResponse({'success': True, 'message': 'Booking cancelled and refunded'})
 
-            if session.status != 'reserved':
-                return JsonResponse({'success': False, 'error': 'Session not reserved'})
+            if session.status == 'reserved':
+                slot = session.slot
+                slot.status = 'available'
+                slot.save()
+                session.status = 'cancelled'
+                session.save()
 
-            slot = session.slot
-            slot.status = 'available'
-            slot.save()
-            session.status = 'cancelled'
-            session.save()
+                payment = Payment.objects.filter(session=session).first()
+                if payment and payment.status == 'completed':
+                    payment.status = 'refunded'
+                    payment.save()
 
-            payment = Payment.objects.filter(session=session).first()
-            if payment and payment.status == 'completed':
-                payment.status = 'refunded'
-                payment.save()
+                cache.delete(LIVE_DATA_CACHE_KEY)
+                return JsonResponse({'success': True, 'message': 'Booking cancelled and refunded successfully'})
 
-            return JsonResponse({'success': True, 'message': 'Booking cancelled and refunded successfully'})
+            return JsonResponse({'success': False, 'error': 'Cannot cancel this session'}, status=400)
         except Exception as e:
             print(f"CancelSessionView error: {e}")
             import traceback
@@ -1081,6 +1197,11 @@ class DashboardView(APIView):
             occupied_slots = ParkingSlot.objects.filter(status='occupied').count()
             reserved_slots = ParkingSlot.objects.filter(status='reserved').count()
 
+            active_sessions_count = ParkingSession.objects.filter(status='active').count()
+            reserved_sessions_count = ParkingSession.objects.filter(status='reserved').count()
+            completed_sessions_count = ParkingSession.objects.filter(status='completed').count()
+            cancelled_sessions_count = ParkingSession.objects.filter(status='cancelled').count()
+
             zones_data = []
             for zone in ParkingZone.objects.filter(is_active=True):
                 slots = zone.slots.all()
@@ -1096,7 +1217,7 @@ class DashboardView(APIView):
                     'occupied_slots': occupied,
                     'reserved_slots': reserved,
                     'occupancy_rate': round((occupied / total * 100), 1) if total > 0 else 0,
-                    'hourly_rate': float(zone.hourly_rate),
+                    'display_rate': get_display_rate(zone),
                 })
 
             all_slots = []
@@ -1107,13 +1228,12 @@ class DashboardView(APIView):
                     'zone_name': slot.zone.name,
                     'slot_type': slot.slot_type,
                     'status': slot.status,
-                    'hourly_rate': float(slot.zone.hourly_rate),
+                    'display_rate': get_display_rate(slot.zone),
                 })
 
             recent_sessions = []
             for session in ParkingSession.objects.select_related('slot', 'slot__zone').order_by('-start_time')[:50]:
-                start_time_local = session.start_time.astimezone(timezone.get_current_timezone())
-                status_display = 'Reserved' if session.status == 'reserved' else ('Active' if session.status == 'active' else ('Completed' if session.status == 'completed' else 'Cancelled'))
+                start_time_local = session.start_time
                 payment = session.payments.first()
                 recent_sessions.append({
                     'session_id': str(session.session_id),
@@ -1122,7 +1242,7 @@ class DashboardView(APIView):
                     'zone_name': session.slot.zone.name,
                     'vehicle_number': session.vehicle_number,
                     'start_time': start_time_local.strftime('%Y-%m-%d %H:%M:%S'),
-                    'status': status_display,
+                    'status': session.status,
                     'payment_method': payment.payment_method if payment else 'N/A'
                 })
 
@@ -1133,6 +1253,10 @@ class DashboardView(APIView):
                     'available_slots': available_slots,
                     'occupied_slots': occupied_slots,
                     'reserved_slots': reserved_slots,
+                    'active_sessions': active_sessions_count,
+                    'reserved_sessions': reserved_sessions_count,
+                    'completed_sessions': completed_sessions_count,
+                    'cancelled_sessions': cancelled_sessions_count
                 },
                 'zones': zones_data,
                 'all_slots': all_slots,
@@ -1149,6 +1273,10 @@ class DashboardView(APIView):
                     'available_slots': 0,
                     'occupied_slots': 0,
                     'reserved_slots': 0,
+                    'active_sessions': 0,
+                    'reserved_sessions': 0,
+                    'completed_sessions': 0,
+                    'cancelled_sessions': 0
                 },
                 'zones': [],
                 'all_slots': [],
@@ -1175,7 +1303,7 @@ class ZoneStatisticsView(APIView):
                     'occupied': occupied,
                     'reserved': reserved,
                     'availability_percentage': round((available / total * 100), 1) if total else 0,
-                    'hourly_rate': float(zone.hourly_rate),
+                    'display_rate': get_display_rate(zone),
                     'coordinates': {'lat': float(zone.location_y or 27.7172), 'lng': float(zone.location_x or 85.3240)}
                 })
             return Response({'success': True, 'zones': stats})
@@ -1198,7 +1326,7 @@ class SearchSlotsView(APIView):
                     'zone_name': slot.zone.name,
                     'slot_type': slot.slot_type,
                     'status': slot.status,
-                    'hourly_rate': float(slot.zone.hourly_rate),
+                    'display_rate': get_display_rate(slot.zone),
                     'coordinates': {
                         'lat': float(slot.zone.location_y or 27.7172),
                         'lng': float(slot.zone.location_x or 85.3240)

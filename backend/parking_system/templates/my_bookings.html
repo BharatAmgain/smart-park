@@ -96,15 +96,15 @@
     <div class="main-container">
         <h2 class="page-title"><i class="fas fa-bookmark me-2"></i>My Parking Bookings</h2>
         <div class="stats-summary" id="statsSummary">
-            <div class="summary-card summary-reserved" onclick="filterBookings('reserved')"><div class="summary-number" id="reservedCount">0</div><div class="summary-label"><i class="fas fa-clock"></i> Reserved</div></div>
-            <div class="summary-card summary-active" onclick="filterBookings('active')"><div class="summary-number" id="activeCount">0</div><div class="summary-label"><i class="fas fa-play"></i> Active</div></div>
+            <div class="summary-card summary-reserved" onclick="filterBookings('reserved')"><div class="summary-number" id="reservedCount">0</div><div class="summary-label"><i class="fas fa-clock"></i> Reserved (Future)</div></div>
+            <div class="summary-card summary-active" onclick="filterBookings('active')"><div class="summary-number" id="activeCount">0</div><div class="summary-label"><i class="fas fa-play"></i> Active (Live)</div></div>
             <div class="summary-card summary-completed" onclick="filterBookings('completed')"><div class="summary-number" id="completedCount">0</div><div class="summary-label"><i class="fas fa-check-circle"></i> Completed</div></div>
             <div class="summary-card summary-cancelled" onclick="filterBookings('cancelled')"><div class="summary-number" id="cancelledCount">0</div><div class="summary-label"><i class="fas fa-times-circle"></i> Cancelled</div></div>
         </div>
         <div class="filter-buttons">
             <button class="filter-btn active" data-filter="all" onclick="filterBookings('all')">All Bookings</button>
-            <button class="filter-btn" data-filter="reserved" onclick="filterBookings('reserved')"><i class="fas fa-clock"></i> Reserved</button>
-            <button class="filter-btn" data-filter="active" onclick="filterBookings('active')"><i class="fas fa-play"></i> Active</button>
+            <button class="filter-btn" data-filter="reserved" onclick="filterBookings('reserved')"><i class="fas fa-clock"></i> Reserved (Future)</button>
+            <button class="filter-btn" data-filter="active" onclick="filterBookings('active')"><i class="fas fa-play"></i> Active (Live)</button>
             <button class="filter-btn" data-filter="completed" onclick="filterBookings('completed')"><i class="fas fa-check"></i> Completed</button>
             <button class="filter-btn" data-filter="cancelled" onclick="filterBookings('cancelled')"><i class="fas fa-times"></i> Cancelled</button>
         </div>
@@ -116,18 +116,246 @@
         let allBookings = [], currentFilter = 'all', isLoading = false;
         function getCookie(name) { let value = null; if (document.cookie && document.cookie !== '') { const cookies = document.cookie.split(';'); for (let cookie of cookies) { cookie = cookie.trim(); if (cookie.substring(0, name.length + 1) === (name + '=')) { value = decodeURIComponent(cookie.substring(name.length + 1)); break; } } } return value; }
         function showToast(msg, type = 'info') { const colors = { success: '#2ecc71', error: '#e74c3c', warning: '#f39c12', info: '#3498db' }; const toast = document.createElement('div'); toast.className = 'toast-notification'; toast.style.borderLeftColor = colors[type]; toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'} me-2"></i> ${msg}<button onclick="this.parentElement.remove()" class="btn-close btn-sm ms-3" style="filter: invert(1);"></button>`; document.body.appendChild(toast); setTimeout(() => toast.remove(), 4000); }
-        async function loadBookings() { if (isLoading) return; isLoading = true; try { const response = await fetch('/api/dashboard/'); const data = await response.json(); if (data.success && data.recent_sessions) { allBookings = data.recent_sessions; updateStats(); displayBookings(allBookings); } else { document.getElementById('bookingsList').innerHTML = '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>No bookings found.</p></div>'; } } catch(e) { document.getElementById('bookingsList').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error loading bookings. Please try again.</p></div>'; showToast('Error loading bookings', 'error'); } finally { isLoading = false; } }
+
+        // FIXED: Display the exact date/time that was reserved - no timezone conversion
+        function formatBookingDate(dateTimeStr) {
+            if (!dateTimeStr) return 'N/A';
+            try {
+                // Direct string parsing to preserve the exact date/time
+                // Expected format from Django: "2026-07-29 10:15:00"
+                const parts = dateTimeStr.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
+                if (parts) {
+                    const year = parseInt(parts[1]);
+                    const month = parseInt(parts[2]) - 1;
+                    const day = parseInt(parts[3]);
+                    const hour = parseInt(parts[4]);
+                    const minute = parseInt(parts[5]);
+                    const second = parseInt(parts[6]);
+
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const monthName = months[month];
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const hour12 = hour % 12 || 12;
+
+                    return `${monthName} ${day}, ${year}, ${hour12}:${String(minute).padStart(2, '0')} ${ampm}`;
+                }
+
+                // Fallback: Try parsing as date using UTC to preserve time
+                let date = new Date(dateTimeStr);
+                if (isNaN(date.getTime())) {
+                    date = new Date(dateTimeStr.replace(' ', 'T'));
+                }
+                if (isNaN(date.getTime())) return dateTimeStr;
+
+                // Use getUTC* methods to preserve the original time
+                const year = date.getUTCFullYear();
+                const month = date.getUTCMonth();
+                const day = date.getUTCDate();
+                const hours = date.getUTCHours();
+                const minutes = date.getUTCMinutes();
+
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const monthName = months[month];
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                const hour12 = hours % 12 || 12;
+
+                return `${monthName} ${day}, ${year}, ${hour12}:${String(minutes).padStart(2, '0')} ${ampm}`;
+            } catch(e) {
+                console.error('Date parsing error:', e);
+                return dateTimeStr;
+            }
+        }
+
+        async function loadBookings() {
+            if (isLoading) return;
+            isLoading = true;
+            try {
+                const response = await fetch('/api/dashboard/');
+                const data = await response.json();
+                if (data.success) {
+                    if (data.overview) {
+                        document.getElementById('reservedCount').textContent = data.overview.reserved_sessions || 0;
+                        document.getElementById('activeCount').textContent = data.overview.active_sessions || 0;
+                        document.getElementById('completedCount').textContent = data.overview.completed_sessions || 0;
+                        document.getElementById('cancelledCount').textContent = data.overview.cancelled_sessions || 0;
+                    }
+
+                    if (data.recent_sessions) {
+                        allBookings = data.recent_sessions;
+                        updateCountsFromSessions(allBookings);
+                        displayBookings(allBookings);
+                    } else {
+                        await loadSessionsDirectly();
+                    }
+                } else {
+                    document.getElementById('bookingsList').innerHTML = '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>No bookings found.</p></div>';
+                }
+            } catch(e) {
+                console.error('Error loading bookings:', e);
+                await loadSessionsDirectly();
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        async function loadSessionsDirectly() {
+            try {
+                const response = await fetch('/api/sessions/');
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    allBookings = data;
+                    updateCountsFromSessions(allBookings);
+                    displayBookings(allBookings);
+                }
+            } catch(e) {
+                console.error('Error loading sessions directly:', e);
+                document.getElementById('bookingsList').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error loading bookings. Please try again.</p></div>';
+                showToast('Error loading bookings', 'error');
+            }
+        }
+
+        function updateCountsFromSessions(bookings) {
+            let reserved = 0, active = 0, completed = 0, cancelled = 0;
+            bookings.forEach(booking => {
+                const status = booking.status?.toLowerCase() || '';
+                if (status === 'reserved') reserved++;
+                else if (status === 'active') active++;
+                else if (status === 'completed') completed++;
+                else if (status === 'cancelled') cancelled++;
+            });
+            if (document.getElementById('reservedCount').textContent == '0') {
+                document.getElementById('reservedCount').textContent = reserved;
+                document.getElementById('activeCount').textContent = active;
+                document.getElementById('completedCount').textContent = completed;
+                document.getElementById('cancelledCount').textContent = cancelled;
+            }
+        }
+
         function refreshBookings() { showToast('Refreshing bookings...', 'info'); loadBookings(); }
-        function updateStats() { let reserved = 0, active = 0, completed = 0, cancelled = 0; allBookings.forEach(booking => { const status = booking.status?.toLowerCase() || ''; if (status === 'reserved') reserved++; else if (status === 'active') active++; else if (status === 'completed') completed++; else if (status === 'cancelled') cancelled++; }); document.getElementById('reservedCount').textContent = reserved; document.getElementById('activeCount').textContent = active; document.getElementById('completedCount').textContent = completed; document.getElementById('cancelledCount').textContent = cancelled; }
-        function filterBookings(filter) { currentFilter = filter; document.querySelectorAll('.filter-btn').forEach(btn => { btn.classList.remove('active'); if (btn.getAttribute('data-filter') === filter) btn.classList.add('active'); }); document.querySelectorAll('.summary-card').forEach(card => card.style.opacity = '0.7'); if (filter === 'reserved') document.querySelector('.summary-reserved').style.opacity = '1'; else if (filter === 'active') document.querySelector('.summary-active').style.opacity = '1'; else if (filter === 'completed') document.querySelector('.summary-completed').style.opacity = '1'; else if (filter === 'cancelled') document.querySelector('.summary-cancelled').style.opacity = '1'; else document.querySelectorAll('.summary-card').forEach(card => card.style.opacity = '1'); if (filter === 'all') displayBookings(allBookings); else { const filtered = allBookings.filter(booking => booking.status?.toLowerCase() === filter.toLowerCase()); displayBookings(filtered); } }
-        function viewOnMap(slotNumber) { localStorage.setItem('reservedSlot', slotNumber); localStorage.setItem('lastReservedSlot', slotNumber); showToast(`Opening map for slot ${slotNumber}...`, 'success'); window.location.href = `/map/?highlight=${slotNumber}`; }
-        function getDirections(slotNumber) { localStorage.setItem('reservedSlot', slotNumber); localStorage.setItem('lastReservedSlot', slotNumber); showToast(`Getting directions to slot ${slotNumber}...`, 'success'); window.location.href = `/map/?directions=${slotNumber}`; }
-        function formatDateTime(dateTimeStr) { if (!dateTimeStr) return 'N/A'; try { let date = new Date(dateTimeStr); if (isNaN(date.getTime())) { date = new Date(dateTimeStr.replace(' ', 'T')); } if (isNaN(date.getTime())) return dateTimeStr; return date.toLocaleString('en-NP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch(e) { return dateTimeStr; } }
-        async function cancelBooking(sessionId, slotNumber) { const booking = allBookings.find(b => b.session_id === sessionId); const isActive = booking?.status?.toLowerCase() === 'active'; const message = isActive ? `Are you sure you want to end this active session for slot ${slotNumber} early?` : `Are you sure you want to cancel reservation for slot ${slotNumber}?`; if (!confirm(message)) return; showToast('Processing...', 'info'); try { const response = await fetch(`/api/cancel-session/${sessionId}/`, { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' } }); const data = await response.json(); if (data.success) { showToast(`✅ ${isActive ? 'Session ended' : 'Booking cancelled'} for slot ${slotNumber}!`, 'success'); if (localStorage.getItem('reservedSlot') === slotNumber) localStorage.removeItem('reservedSlot'); if (localStorage.getItem('lastReservedSlot') === slotNumber) localStorage.removeItem('lastReservedSlot'); await loadBookings(); } else { showToast(data.error || 'Failed', 'error'); } } catch(e) { showToast('Error', 'error'); } }
-        function displayBookings(bookings) { const container = document.getElementById('bookingsList'); if (!bookings || bookings.length === 0) { let message = currentFilter !== 'all' ? `No ${currentFilter} bookings found.` : 'No bookings found.'; container.innerHTML = `<div class="empty-state"><i class="fas fa-calendar-times"></i><p>${message}</p></div>`; return; } let html = ''; bookings.forEach(booking => { let statusClass = '', statusText = '', cardClass = '', actionButtons = ''; const status = booking.status?.toLowerCase() || ''; const sessionId = booking.session_id; if (status === 'reserved') { statusClass = 'status-reserved'; statusText = 'Reserved'; cardClass = 'reserved-card'; actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-directions" onclick="getDirections('${booking.slot_number}')"><i class="fas fa-directions"></i> Directions</button><button class="btn-cancel" onclick="cancelBooking('${sessionId}', '${booking.slot_number}')"><i class="fas fa-times"></i> Cancel</button>`; } else if (status === 'active') { statusClass = 'status-active'; statusText = 'Active'; cardClass = 'active-card'; actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-directions" onclick="getDirections('${booking.slot_number}')"><i class="fas fa-directions"></i> Directions</button><button class="btn-cancel" onclick="cancelBooking('${sessionId}', '${booking.slot_number}')"><i class="fas fa-times"></i> End Early</button>`; } else if (status === 'completed') { statusClass = 'status-completed'; statusText = 'Completed'; cardClass = 'completed-card'; actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-refund"><i class="fas fa-check"></i> Completed</button>`; } else if (status === 'cancelled') { statusClass = 'status-cancelled'; statusText = 'Cancelled'; cardClass = 'cancelled-card'; actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-refund"><i class="fas fa-history"></i> Refunded</button>`; } else { statusClass = 'status-reserved'; statusText = booking.status || 'Reserved'; cardClass = 'reserved-card'; actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-directions" onclick="getDirections('${booking.slot_number}')"><i class="fas fa-directions"></i> Directions</button>`; } const paymentMethod = booking.payment_method || 'N/A'; const startTime = formatDateTime(booking.start_time); const zoneName = booking.zone_name || `Zone ${booking.zone_id || 'N/A'}`; html += `<div class="booking-card ${cardClass}"><div class="booking-header"><span class="slot-number"><i class="fas fa-parking"></i> Slot ${booking.slot_number}</span><span class="status-badge ${statusClass}">${statusText}</span></div><div class="booking-details"><div class="detail-row"><i class="fas fa-building"></i><span>Zone: ${zoneName}</span></div><div class="detail-row"><i class="fas fa-car"></i><span>Vehicle: ${booking.vehicle_number}</span></div><div class="detail-row"><i class="fas fa-clock"></i><span>Start: ${startTime}</span></div><div class="detail-row"><i class="fas fa-credit-card"></i><span>Payment: ${paymentMethod.toUpperCase()}</span></div></div><div class="booking-actions">${actionButtons}</div></div>`; }); container.innerHTML = html; }
+
+        function filterBookings(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-filter') === filter) btn.classList.add('active');
+            });
+            document.querySelectorAll('.summary-card').forEach(card => card.style.opacity = '0.7');
+            if (filter === 'reserved') document.querySelector('.summary-reserved').style.opacity = '1';
+            else if (filter === 'active') document.querySelector('.summary-active').style.opacity = '1';
+            else if (filter === 'completed') document.querySelector('.summary-completed').style.opacity = '1';
+            else if (filter === 'cancelled') document.querySelector('.summary-cancelled').style.opacity = '1';
+            else document.querySelectorAll('.summary-card').forEach(card => card.style.opacity = '1');
+
+            if (filter === 'all') displayBookings(allBookings);
+            else {
+                const filtered = allBookings.filter(booking => booking.status?.toLowerCase() === filter.toLowerCase());
+                displayBookings(filtered);
+            }
+        }
+
+        function viewOnMap(slotNumber) {
+            localStorage.setItem('reservedSlot', slotNumber);
+            localStorage.setItem('lastReservedSlot', slotNumber);
+            showToast(`Opening map for slot ${slotNumber}...`, 'success');
+            window.location.href = `/map/?highlight=${slotNumber}`;
+        }
+
+        function getDirections(slotNumber) {
+            localStorage.setItem('reservedSlot', slotNumber);
+            localStorage.setItem('lastReservedSlot', slotNumber);
+            showToast(`Getting directions to slot ${slotNumber}...`, 'success');
+            window.location.href = `/map/?directions=${slotNumber}`;
+        }
+
+        async function cancelBooking(sessionId, slotNumber) {
+            const booking = allBookings.find(b => b.session_id === sessionId);
+            const isActive = booking?.status?.toLowerCase() === 'active';
+            const message = isActive ? `Are you sure you want to end this active session for slot ${slotNumber} early?` : `Are you sure you want to cancel reservation for slot ${slotNumber}?`;
+            if (!confirm(message)) return;
+            showToast('Processing...', 'info');
+            try {
+                const response = await fetch(`/api/cancel-session/${sessionId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast(`✅ ${isActive ? 'Session ended' : 'Booking cancelled'} for slot ${slotNumber}!`, 'success');
+                    if (localStorage.getItem('reservedSlot') === slotNumber) localStorage.removeItem('reservedSlot');
+                    if (localStorage.getItem('lastReservedSlot') === slotNumber) localStorage.removeItem('lastReservedSlot');
+                    await loadBookings();
+                } else {
+                    showToast(data.error || 'Failed', 'error');
+                }
+            } catch(e) {
+                showToast('Error', 'error');
+            }
+        }
+
+        function displayBookings(bookings) {
+            const container = document.getElementById('bookingsList');
+            if (!bookings || bookings.length === 0) {
+                let message = currentFilter !== 'all' ? `No ${currentFilter} bookings found.` : 'No bookings found.';
+                container.innerHTML = `<div class="empty-state"><i class="fas fa-calendar-times"></i><p>${message}</p></div>`;
+                return;
+            }
+            let html = '';
+            bookings.forEach(booking => {
+                let statusClass = '', statusText = '', cardClass = '', actionButtons = '';
+                const status = booking.status?.toLowerCase() || '';
+                const sessionId = booking.session_id;
+
+                // FIXED: Use the exact date/time that was reserved - no timezone conversion
+                const startTime = formatBookingDate(booking.start_time);
+
+                if (status === 'reserved') {
+                    statusClass = 'status-reserved';
+                    statusText = 'Reserved (Future)';
+                    cardClass = 'reserved-card';
+                    actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-directions" onclick="getDirections('${booking.slot_number}')"><i class="fas fa-directions"></i> Directions</button><button class="btn-cancel" onclick="cancelBooking('${sessionId}', '${booking.slot_number}')"><i class="fas fa-times"></i> Cancel</button>`;
+                } else if (status === 'active') {
+                    statusClass = 'status-active';
+                    statusText = 'Active (Live)';
+                    cardClass = 'active-card';
+                    actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-directions" onclick="getDirections('${booking.slot_number}')"><i class="fas fa-directions"></i> Directions</button><button class="btn-cancel" onclick="cancelBooking('${sessionId}', '${booking.slot_number}')"><i class="fas fa-times"></i> End Early</button>`;
+                } else if (status === 'completed') {
+                    statusClass = 'status-completed';
+                    statusText = 'Completed';
+                    cardClass = 'completed-card';
+                    actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-refund"><i class="fas fa-check"></i> Completed</button>`;
+                } else if (status === 'cancelled') {
+                    statusClass = 'status-cancelled';
+                    statusText = 'Cancelled';
+                    cardClass = 'cancelled-card';
+                    actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-refund"><i class="fas fa-history"></i> Refunded</button>`;
+                } else {
+                    statusClass = 'status-reserved';
+                    statusText = booking.status || 'Reserved';
+                    cardClass = 'reserved-card';
+                    actionButtons = `<button class="btn-map" onclick="viewOnMap('${booking.slot_number}')"><i class="fas fa-map-marked-alt"></i> View on Map</button><button class="btn-directions" onclick="getDirections('${booking.slot_number}')"><i class="fas fa-directions"></i> Directions</button>`;
+                }
+                const paymentMethod = booking.payment_method || 'N/A';
+                const zoneName = booking.zone_name || `Zone ${booking.zone_id || 'N/A'}`;
+                html += `<div class="booking-card ${cardClass}"><div class="booking-header"><span class="slot-number"><i class="fas fa-parking"></i> Slot ${booking.slot_number}</span><span class="status-badge ${statusClass}">${statusText}</span></div><div class="booking-details"><div class="detail-row"><i class="fas fa-building"></i><span>Zone: ${zoneName}</span></div><div class="detail-row"><i class="fas fa-car"></i><span>Vehicle: ${booking.vehicle_number}</span></div><div class="detail-row"><i class="fas fa-calendar-check"></i><span>Reserved Start: ${startTime}</span></div><div class="detail-row"><i class="fas fa-credit-card"></i><span>Payment: ${paymentMethod.toUpperCase()}</span></div></div><div class="booking-actions">${actionButtons}</div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
         let autoRefreshInterval = null;
-        function startAutoRefresh() { if (autoRefreshInterval) clearInterval(autoRefreshInterval); autoRefreshInterval = setInterval(() => { if (!isLoading) loadBookings(); }, 30000); }
-        document.addEventListener('DOMContentLoaded', () => { loadBookings(); startAutoRefresh(); });
+        function startAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(() => {
+                if (!isLoading) loadBookings();
+            }, 30000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBookings();
+            startAutoRefresh();
+        });
     </script>
 </body>
 </html>
